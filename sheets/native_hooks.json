@@ -1,0 +1,29 @@
+{
+  "name": "native_hooks",
+  "columns": ["id", "rva", "signature", "purpose", "evidence", "runtime_verified"],
+  "rows": [
+    {"id": "follow_camera_commit", "rva": "0x232BCB0", "signature": "4883ec38f20f10813c0300008b8144030000f20f11442420f30f588130030000", "purpose": "Observe the current local actor through the same-frame camera target.", "evidence": "norfmare source and exact executable hash; observed 5426 calls and 83 live samples during a 25-second movement run on 2026-10-12, zero faults. This proves observation only, not actor control or replication.", "runtime_verified": true},
+    {"id": "spawn_remote_actor", "rva": null, "signature": null, "purpose": "Create a second live, independently controlled Miles actor.", "evidence": "Unresolved; requires native actor construction and lifetime validation.", "runtime_verified": false},
+    {"id": "remote_input", "rva": null, "signature": null, "purpose": "Apply peer input to the remote actor without taking over the local actor.", "evidence": "Unresolved; requires native controller/action validation.", "runtime_verified": false},
+    {"id": "actor_lifetime", "rva": null, "signature": null, "purpose": "Resolve and release remote actor handles across scenes without stale pointers.", "evidence": "Unresolved; camera handle observations do not establish ownership.", "runtime_verified": false},
+    {"id": "simulation_tick", "rva": null, "signature": null, "purpose": "Apply host-authoritative game updates on the correct simulation thread.", "evidence": "Unresolved; camera updates are not a simulation API.", "runtime_verified": false},
+    {"id": "damage_events", "rva": null, "signature": null, "purpose": "Apply both players' attacks to shared enemy health and reproduce results.", "evidence": "Unresolved; must confirm damage, attribution and death semantics.", "runtime_verified": false},
+    {"id": "mission_state", "rva": null, "signature": null, "purpose": "Synchronize objectives, checkpoints, completion and scripted triggers.", "evidence": "Unresolved; host and guest scripts cannot run independently and count as shared missions.", "runtime_verified": false},
+    {"id": "world_state", "rva": null, "signature": null, "purpose": "Identify and synchronize enemies, interactive objects and activity instances.", "evidence": "Unresolved; stable world identifiers and streaming lifetime needed.", "runtime_verified": false},
+    {"id": "cutscene_state", "rva": null, "signature": null, "purpose": "Coordinate cutscenes, transitions and scripted character control.", "evidence": "Unresolved; all campaign sequences must be verified.", "runtime_verified": false},
+    {"id": "progress_events", "rva": null, "signature": null, "purpose": "Apply completion and reward events to each player's own save once.", "evidence": "Unresolved; save formats, idempotence and profile identity need verification.", "runtime_verified": false}
+  ],
+  "checks": {
+    "follow_camera_commit": ["id", "rva", "signature", "purpose", "evidence", "runtime_verified"],
+    "spawn_remote_actor": ["id", "purpose", "evidence"],
+    "remote_input": ["id", "purpose", "evidence"],
+    "actor_lifetime": ["id", "purpose", "evidence"],
+    "simulation_tick": ["id", "purpose", "evidence"],
+    "damage_events": ["id", "purpose", "evidence"],
+    "mission_state": ["id", "purpose", "evidence"],
+    "world_state": ["id", "purpose", "evidence"],
+    "cutscene_state": ["id", "purpose", "evidence"],
+    "progress_events": ["id", "purpose", "evidence"]
+  },
+  "references": []
+}

@@ -1,0 +1,16 @@
+__pycache__/
+.venv/
+build/
+dist/
+generated/
+reports/
+research/
+*.log
+*.dmp
+*.mdmp
+*.pdb
+*.zip
+*.dll
+*.exe
+*.bin
+

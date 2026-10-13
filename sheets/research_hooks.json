@@ -1,0 +1,9 @@
+{
+  "name": "research_hooks",
+  "columns": ["id", "rva", "signature", "arguments", "return_type", "context_rva", "purpose", "evidence", "runtime_verified"],
+  "rows": [
+    {"id": "loaded_actor_asset_lookup", "rva": "0x1aa7c80", "signature": "40534883ec20488bd98bc248b900000000ffffffff", "arguments": ["pointer", "uint64"], "return_type": "pointer", "context_rva": "0x6a49660", "purpose": "Research-only query for an already loaded actor asset; does not spawn or edit an actor.", "evidence": "Native spawn path, ABI and exact bytes checked. Live lookup for actors/hrm_bdy_firsthero/hero_spiderman.actor returned a nonnull loaded resource on the observed game thread; 20 actor samples and zero faults during the six-second probe.", "runtime_verified": true}
+  ],
+  "checks": {"loaded_actor_asset_lookup": ["id", "rva", "signature", "arguments", "return_type", "context_rva", "purpose", "evidence", "runtime_verified"]},
+  "references": []
+}

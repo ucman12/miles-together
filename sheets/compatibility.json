@@ -1,0 +1,7 @@
+{
+  "name": "compatibility",
+  "columns": ["id", "executable", "sha256", "steam_build", "game_version", "evidence"],
+  "rows": [{"id": "steam_current", "executable": "MilesMorales.exe", "sha256": "0cfe5e529369bd3eac642b56ce9ad068b47bb1a294ac1ea1ef7ef4dcf22d3256", "steam_build": "23986141", "game_version": "4.630.0.0", "evidence": "Installed file hash, Steam manifest and launched game window title checked on 2026-10-12."}],
+  "checks": "all",
+  "references": []
+}

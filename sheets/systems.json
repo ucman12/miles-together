@@ -1,0 +1,29 @@
+{
+  "name": "systems",
+  "columns": ["id", "behavior", "hook", "verification"],
+  "rows": [
+    {"id": "local_actor", "behavior": "Read local pose and identity without changing the camera.", "hook": "follow_camera_commit", "verification": "passed"},
+    {"id": "second_actor", "behavior": "Both players see and interact with two live characters.", "hook": "spawn_remote_actor", "verification": "pending"},
+    {"id": "input_and_traversal", "behavior": "Independent cameras, locomotion, swing, climb and zip for each player.", "hook": "remote_input", "verification": "pending"},
+    {"id": "actor_ownership", "behavior": "Create, resolve and clean up peer characters through streaming and reconnects.", "hook": "actor_lifetime", "verification": "pending"},
+    {"id": "network_and_clock", "behavior": "Authenticated two-player host-authoritative session; simulation-thread application of bounded messages.", "hook": "simulation_tick", "verification": "pending"},
+    {"id": "combat_and_powers", "behavior": "Shared enemies accept melee, webs, gadgets and Venom from either player.", "hook": "damage_events", "verification": "pending"},
+    {"id": "stealth", "behavior": "Shared detection, camouflage and takedowns affect the same enemies.", "hook": "world_state", "verification": "pending"},
+    {"id": "campaign_objectives", "behavior": "Shared mission objectives and checkpoints advance together end to end.", "hook": "mission_state", "verification": "pending"},
+    {"id": "side_activities", "behavior": "Shared crimes, challenges, side missions and collectibles remain accessible to both players.", "hook": "mission_state", "verification": "pending"},
+    {"id": "world_and_streaming", "behavior": "Consistent enemy and object identities across both copies; existing game assets read locally.", "hook": "world_state", "verification": "pending"},
+    {"id": "cutscenes_and_transitions", "behavior": "Both players traverse cinematic, civilian, scripted and boss sequences together.", "hook": "cutscene_state", "verification": "pending"},
+    {"id": "death_and_retry", "behavior": "A shared mission failure returns both players to the same checkpoint.", "hook": "mission_state", "verification": "pending"},
+    {"id": "rewards_and_saves", "behavior": "Mission completion and rewards persist to both existing saves without overwriting unrelated progress.", "hook": "progress_events", "verification": "pending"}
+  ],
+  "checks": {
+    "local_actor": ["id", "behavior", "hook", "verification"], "second_actor": ["id", "behavior", "hook"],
+    "input_and_traversal": ["id", "behavior", "hook"], "actor_ownership": ["id", "behavior", "hook"],
+    "network_and_clock": ["id", "behavior", "hook"], "combat_and_powers": ["id", "behavior", "hook"],
+    "stealth": ["id", "behavior", "hook"], "campaign_objectives": ["id", "behavior", "hook"],
+    "side_activities": ["id", "behavior", "hook"], "world_and_streaming": ["id", "behavior", "hook"],
+    "cutscenes_and_transitions": ["id", "behavior", "hook"], "death_and_retry": ["id", "behavior", "hook"],
+    "rewards_and_saves": ["id", "behavior", "hook"]
+  },
+  "references": [{"column": "hook", "sheet": "native_hooks", "key": "id"}]
+}
