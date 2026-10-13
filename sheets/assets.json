@@ -1,0 +1,30 @@
+{
+ "name": "assets",
+ "columns": [
+  "id",
+  "path",
+  "asset_id",
+  "purpose",
+  "evidence",
+  "runtime_verified"
+ ],
+ "rows": [
+  {
+   "id": "puppet_actor",
+   "path": "actors/hrm_bdy_firsthero/hero_milesmorales.actor",
+   "asset_id": "0x93e0b3714a2afede",
+   "purpose": "The game's own Miles actor, spawned as the other player's double. Read from the player's install; never shipped.",
+   "evidence": "Present in the installed archive and loaded in free roam; live spawn succeeded.",
+   "runtime_verified": true
+  },
+  {
+   "id": "hero_actor",
+   "path": "actors/hrm_bdy_firsthero/hero_spiderman.actor",
+   "asset_id": "0xa896ee61f3c11fb8",
+   "purpose": "The actor the local player's hero is created from; poses are only read from a hero made from it, so the 241-joint rig is certain.",
+   "evidence": "Live: the local hero object's asset pointer equalled this asset's lookup result.",
+   "runtime_verified": true
+  }
+ ],
+ "references": []
+}

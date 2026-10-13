@@ -1,0 +1,181 @@
+{
+ "name": "layout",
+ "columns": [
+  "id",
+  "value",
+  "purpose",
+  "evidence",
+  "runtime_verified"
+ ],
+ "rows": [
+  {
+   "id": "object_actor",
+   "value": 0,
+   "purpose": "Object: pointer to its actor transform record.",
+   "evidence": "Live: matched the camera target's actor.",
+   "runtime_verified": true
+  },
+  {
+   "id": "object_flags",
+   "value": 8,
+   "purpose": "Object: 16-bit state flags; bit 0 set once activated.",
+   "evidence": "Live: 0x20A before activation, 0x220B after.",
+   "runtime_verified": true
+  },
+  {
+   "id": "object_index",
+   "value": 12,
+   "purpose": "Object: 20-bit slot index used in handles.",
+   "evidence": "Live: handle built from it resolved back to the same object.",
+   "runtime_verified": true
+  },
+  {
+   "id": "object_generation",
+   "value": 16,
+   "purpose": "Object: 11-bit generation used in handles.",
+   "evidence": "Live: handle built from it resolved back to the same object.",
+   "runtime_verified": true
+  },
+  {
+   "id": "object_asset",
+   "value": 48,
+   "purpose": "Object: pointer to the actor asset it was created from.",
+   "evidence": "Live: the hero object's field equalled the lookup of the hero actor asset; the puppet's equalled the Miles actor asset.",
+   "runtime_verified": true
+  },
+  {
+   "id": "object_dense_table",
+   "value": 128,
+   "purpose": "Object: component table (descriptor, instance pairs).",
+   "evidence": "Live: 290 entries enumerated on the hero, 26 on the puppet.",
+   "runtime_verified": true
+  },
+  {
+   "id": "object_dense_capacity",
+   "value": 136,
+   "purpose": "Object: 16-bit capacity of the component table.",
+   "evidence": "Live enumeration.",
+   "runtime_verified": true
+  },
+  {
+   "id": "component_descriptor_name",
+   "value": 96,
+   "purpose": "Component descriptor: pointer to its class name.",
+   "evidence": "Live: names matched RTTI, for example SkinManager.",
+   "runtime_verified": true
+  },
+  {
+   "id": "actor_matrix",
+   "value": 0,
+   "purpose": "Actor: 4x4 world matrix, translation in the last row.",
+   "evidence": "Live movement traces.",
+   "runtime_verified": true
+  },
+  {
+   "id": "actor_invalid_flag",
+   "value": 95,
+   "purpose": "Actor: zero while the actor is alive.",
+   "evidence": "Live traces and the engine's own checks.",
+   "runtime_verified": true
+  },
+  {
+   "id": "actor_transform_state",
+   "value": 112,
+   "purpose": "Actor: field the engine passes as the third argument of its own transform write.",
+   "evidence": "The hero spawn code calls the transform write with actor+0x70; the live mirror used the same call for 1772 frames.",
+   "runtime_verified": true
+  },
+  {
+   "id": "actor_joints",
+   "value": 216,
+   "purpose": "Actor: pointer to its joint matrices (4x4 floats, actor space).",
+   "evidence": "Live: copying the hero's array posed the puppet.",
+   "runtime_verified": true
+  },
+  {
+   "id": "joint_count",
+   "value": 241,
+   "purpose": "Number of joints in the hero base rig.",
+   "evidence": "Live: 241 valid matrices, zero matrices after; scale and range measured over 1015 frames.",
+   "runtime_verified": true
+  },
+  {
+   "id": "skin_parts",
+   "value": 80,
+   "purpose": "SkinManager: pointer to its part array.",
+   "evidence": "Live: hero had 3 populated parts.",
+   "runtime_verified": true
+  },
+  {
+   "id": "skin_part_count",
+   "value": 76,
+   "purpose": "SkinManager: number of part slots.",
+   "evidence": "Live: 65 on hero and puppet.",
+   "runtime_verified": true
+  },
+  {
+   "id": "skin_part_stride",
+   "value": 1720,
+   "purpose": "SkinManager: bytes per part slot.",
+   "evidence": "Engine indexing constant 0x6B8; live reads lined up.",
+   "runtime_verified": true
+  },
+  {
+   "id": "skin_part_config",
+   "value": 60,
+   "purpose": "Part slot: 64-bit id of its skin config.",
+   "evidence": "Live: ids read from the hero dressed the puppet.",
+   "runtime_verified": true
+  },
+  {
+   "id": "skin_add_parts_vfunc",
+   "value": 88,
+   "purpose": "SkinManager vtable offset of the add-parts method.",
+   "evidence": "Live: call added the hero's parts to the puppet.",
+   "runtime_verified": true
+  },
+  {
+   "id": "skin_list_items",
+   "value": 256,
+   "purpose": "Add-parts argument: pointer to its items.",
+   "evidence": "Engine accessor at 0x27DF940; live call.",
+   "runtime_verified": true
+  },
+  {
+   "id": "skin_list_count",
+   "value": 264,
+   "purpose": "Add-parts argument: item count.",
+   "evidence": "Engine loop bound; live call.",
+   "runtime_verified": true
+  },
+  {
+   "id": "skin_item_stride",
+   "value": 200,
+   "purpose": "Add-parts argument: bytes per item.",
+   "evidence": "Engine accessor constant 0xC8; live call.",
+   "runtime_verified": true
+  },
+  {
+   "id": "skin_item_config",
+   "value": 52,
+   "purpose": "Add-parts item: 64-bit skin config id.",
+   "evidence": "Engine read at item+0x34; live call.",
+   "runtime_verified": true
+  },
+  {
+   "id": "look_entries",
+   "value": 88,
+   "purpose": "Look: pointer to its body-group entries (16 bytes each).",
+   "evidence": "norfmare's documented layout; live read gave four entries with the known mask and hood ids.",
+   "runtime_verified": true
+  },
+  {
+   "id": "look_entry_count",
+   "value": 96,
+   "purpose": "Look: number of body-group entries.",
+   "evidence": "norfmare's documented layout; live read gave 4.",
+   "runtime_verified": true
+  }
+ ],
+ "references": []
+}

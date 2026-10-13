@@ -70,3 +70,68 @@ Investigate entity spawning/control, simulation updates, damage/enemies, mission
 ## Remaining implementation blocker
 
 There is no verified guest/session construction and remote controller binding yet. Native observations, asset parsing and symbol/vtable discoveries do not establish a second playable character. Next work must validate normal spawn/session registration with observed native inputs, then establish remote lifetime and control, before networking, enemy damage, mission/cutscene replication and idempotent progress merging. Preserve the requested full campaign/side-activity goal and both players' saves. Do not replace it with a visible ghost, separate solo play or another host game.
+
+## 2026-10-12 (Claude Code session): free-roam first version agreed, second Miles verified live
+
+- Creator agreed to a smaller first playable: "free roam first". Two players, each in their own game and save, see each other's Miles in the open city. Shared enemies, missions and saves are later versions.
+- Private work folder: `%USERPROFILE%\AppData\Local\MilesCoopResearch\work` (rx.py static helper, decomp.sh Ghidra wrapper, live.py + prelude.js Frida harness, boot.sh launch-to-free-roam, shot.sh, drive.sh). Screenshots in `...\MilesCoopResearch\shots`. None of it enters the project.
+- VERIFIED LIVE (game thread = FollowCameraMover commit hook thread), all RVAs for the hashed Steam build:
+  - Spawn primitive `0x24735F0 (uint64 actorAssetId, void* ctx=0, Mat4* transform) -> GameObject*`. It is what `PhotomodeSystem::SpawnDoppelganger` (handler `0xEA8830`) calls. Works for the loaded asset `actors/hrm_bdy_firsthero/hero_milesmorales.actor` id `0x93e0b3714a2afede` (Miles rig, AnimController, SkinManager, HeadManager, no HeroLocal).
+  - A spawned object is inert until `ActivateObjects 0x1E24CC0 (objMgr=exe+0x83F8C00, {uint32* handles; int count}[] batches, nBatches)`. Flags at obj+8 go 0x20A -> 0x220B.
+  - Handle = `((u16[obj+0x10] & 0x7ff) << 20) | (u32[obj+0xC] & 0xfffff)`; `ResolveHandle 0x1AA8E20(uint32*) -> obj`; local hero handle global at exe+`0x66FDF38`; obj[0] = actor (0x140-byte transform record), obj+0x30 = actor asset.
+  - The base model is invisible. Visible suit = SkinManager parts (stride 0x6B8 at SkinManager+0x50, count +0x4C, config id at part+0x3C). Calling SkinManager vfunc 11 (vtable+0x58) with a list `{+0x100: items*, +0x108: count}`, items 0xC8 bytes with config id at +0x34, adds parts asynchronously. Copying the hero's part ids made the puppet render in the same suit.
+  - Pose: actor+0xD8 = array of 241 joint matrices (4x4 floats, actor space). Copying the hero's array onto the puppet poses it, and the pose persists because the puppet runs no animation.
+  - Move actor: `0x1E278C0 (actor, Mat4*, actor+0x70)`.
+  - Add component: `GetOrCreateComponent 0x1AA5440 (obj, descriptor, initData)`. Component descriptors have the name pointer at +0x60.
+- DEAD ENDS: `HeroLoadoutCloner` (descriptor exe+0x780EFB0) added with null init data crashes on its first update (null prius at cloner+0x40). Applying a loadout through the loadout manager (`0x246C580`, vfunc 17) did not add skin parts by itself.
+- Probably useful, unverified: destroy by handle `0x24736F0 (uint32 handle)`; opacity `0xEA9900`.
+- Melty contract (setup_multiplayer): mod reads `join=` from `%LOCALAPPDATA%\MilesTogether\melty.properties`, hosts on 0.0.0.0 when empty, writes `Melty join address: <ip:port>` / `Melty joined: <address>` / `Melty join failed: <why>` to `melty.log` there. Melty's relay carries friends to the listening port.
+- Game crashed once during probing (cloner test). Saves untouched; backup from earlier still valid.
+
+### Next
+Per-frame tick choice, puppet destroy, suit change sync, compact pose packets, then the C++ `version.dll` proxy with TCP host/join and a Melty test mode.
+
+## 2026-10-13: version 0.1.0 built and tested
+
+### Route
+- Loader: the mod is `winmm.dll` beside the game. `version.dll` was tried first and never loaded: the game process took Windows' own copy. The game imports winmm directly, so Windows loads the proxy at start. All 181 exports are forwarded with Windows' ordinals (`src/proxy.cpp`, `src/proxy_exports.inc`, `src/proxy.def`).
+- Compiler: llvm-mingw 20261006 (ucrt, x86_64), SHA-256 of the zip checked against the release digest. Installed at `%USERPROFILE%\.codex\toolkits\llvm-mingw-dl`. MinHook 1.3.4 vendored in `third_party/minhook`.
+- With this clang, `__try/__except` needs `-fms-extensions` and only catches faults raised inside a called, non-inlined function. The tick is therefore `GuardedTick()` calling `noinline Tick()`.
+- Per-frame tick: `PhotomodeSystem::PreUpdate` at 0xEA4AA0, same thread as the camera commit, once per frame.
+
+### More verified facts (all in the sheets)
+- Destroy: `0x24736F0(handle)` queues the engine's deferred destroy; handle resolves to null about a frame later.
+- The main menu has a hero object too (Miles on the train, made from the same hero actor). The Miles actor asset `0x93e0…` is not loaded there, which is how the mod tells menu from city.
+- Mask, hood and body are body groups. A freshly dressed double shows none of them: call `apply_body_groups` (0x5AC830) on the visible body actor (0x5AB670) with the entries of the look from `resolve_selected_look` (0x5AB7A0). Entries are 16 bytes: name pointer, name length, name hash.
+- Skin parts load asynchronously, also for a suit the receiving game never loaded. The double is respawned when the remote suit changes.
+- 7 of the 241 joints carry non-unit scale, 4 sit up to 35 m from the actor (reach targets). The codec handles both.
+- Gameplay keys are scan codes in `HKCU\Software\Insomniac Games\Marvel's Spider-Man Miles Morales\Input` (W 0x11, Space 0x39, LShift 0x2A swing, LCtrl 0x1D drop from a perch). SendInput with scan codes works for them; you cannot walk off a perch, press drop first.
+
+### Dead ends
+- Two copies of the game on one PC: the second needs `steam_appid.txt` (test only, removed again) and a renamed start-up mutex `i31_GameInitMutex`. It runs and the mod joins, but the game ignores all menu input in the second copy, with or without the mod, even while the first copy is suspended. A single copy started the same way is fine. So one PC can prove host, join and hello, not two players in the city.
+- vgamepad could not attach to the installed ViGEmBus, so a virtual pad was not available.
+- `HeroLoadoutCloner` and the loadout manager (see the 2026-10-12 entry).
+
+### What was tested
+- `tests/codec_test.cpp` in every build; `python -m unittest discover -s tests`.
+- Mirror double (Melty test mode): all four checks pass and are written to the checks file.
+- Echo peer over real TCP: suit, pose, away, ping; a suit not loaded locally; suit change; checkpoint reload; a 5-minute soak at 52 microseconds per frame on average.
+- Two real copies: host line, join, hello, reconnect after a stall. `setup_multiplayer` read both logs: joined, matches host. It warns the address is private and that Melty's relay carries friends to it.
+- NOT tested: two PCs, and the internet path through Melty's relay.
+
+### State left on this PC
+- Game folder: `winmm.dll` from the test build. Saves untouched (suit change during testing was not saved). Save backup from 2026-10-12 still at `%USERPROFILE%\.universal-modder\backups\miles-morales-coop-saves`.
+- Melty draft: id `d2500e08-1d7d-4e9c-ab0e-cc0dff30f215`, slug `miles-together`.
+- `tools/trace_player.py` was removed: it read sheets that no longer exist, and `tools/echo_peer.py` plus the mod's own log replace it.
+
+### Melty draft and test (2026-10-13)
+- Release 0.1.0 submitted as a draft (release id `0537d8e0-8ef7-41cd-8cb1-8e77070b9510`), package SHA-256 `3a4fe379…9f30bd3b`. `one_click_check`: yes. Listing has two screenshots and one clip.
+- `test_release` 2d2f97ed: passed, 3 of 3 runs, all four checks each run. Melty installed the release itself into the game folder and parked it afterwards as `winmm.dll.melty-off`, so the game starts unmodded outside Melty.
+- Quirks of testing this game through Melty: it reports the mod as loaded "in crs-video.exe" (the game's video helper also loads winmm.dll), cannot see the game window, and does not close the game when a run ends. The game had to be closed by hand after each run, and its menus driven (Enter, Enter) to reach the city. The first attempt failed on run 2 for that reason only.
+- The screenshots and clip show the real build in the real game. The second Miles in them is driven by `tools/echo_peer.py` replaying the player's own movement over the network in another suit, not by a second person.
+- `melty.json` at the project root holds the validated recipe. Nothing has been committed or published.
+
+### Publishing on hold (2026-10-13)
+- Creator: wait for a two-device test before publishing. They plan to use a Steam Deck signed in to their second Steam account.
+- Steam Deck runs the game through Proton, which uses its own winmm unless told otherwise. Launch option needed: `WINEDLLOVERRIDES="winmm=n,b" %command%`. Not tested.
+- This PC's firewall already allows the game inbound on TCP and UDP for all profiles, so this PC can host and the Deck can join at `<host LAN address>:47584`.

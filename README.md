@@ -1,65 +1,111 @@
 # Miles Together
 
-**Research in progress. This is not a playable co-op mod or a published release.**
+Online two-player free roam for the PC version of **Marvel's Spider-Man: Miles Morales**.
+Each player runs their own copy of the game and their own save, and sees the other
+player's Miles in the city: running, swinging, climbing and fighting, in the suit that
+player is wearing.
 
-The requested mod adds online two-player co-op to the player's installed PC copy of
-Marvel's Spider-Man: Miles Morales. Both players participate in the same campaign
-missions and side activities, and retain completion and rewards in their own saves.
-The target includes the campaign from beginning to end. Host-game integration,
-shared combat and mission logic must work before anything is listed as playable.
+Published on Melty: <https://melty.gg/m/miles-together>
 
-The native observation tests pass: a hash-checked hook observes Miles's live actor
-and movement, enumerates 290 populated component/alias entries, and queries an already
-loaded actor asset on the game thread in the installed Steam build. A second playable actor, networking,
-combat replication, synchronized mission state and safe progress merging are still
-unimplemented. A successful observation is not a co-op gameplay test.
+## What a player gets
 
-## Source of truth
+- Two players in one New York. One presses Play in Melty, the other joins from the
+  mashup's page; Melty hands the joiner the host's address.
+- The other player's Miles is the game's own Miles model, moved by the poses their game
+  sends 20 times a second and smoothed in between.
+- Suits follow: change your suit and your friend sees it, mask and hood included, even
+  when it is a suit their game had not loaded.
+- Your friend shows on your map as a second hero marker.
+- Nothing is written to save files. On a game version the mod was not built for it
+  switches itself off and the game runs unchanged.
 
-The JSON sheets in `sheets/` record the design, compatibility, native hooks and every
-touched gameplay system. Each declared row/column cell has an explicit verification
-check. Unknown addresses and untested behavior deliberately fail preflight.
+## What this version does not do
 
-Before a mod build:
+- Enemies, crimes and missions are not shared. Each player fights in their own city.
+- The other player's web lines, gadgets and effects are not drawn.
+- Two players per game.
+- Friends reach a host through Melty's relay. Where the relay cannot carry a player,
+  both need to be on the same network.
+
+Shared enemies, missions and saves are the goal for later versions.
+
+## Requirements
+
+Marvel's Spider-Man: Miles Morales on Steam, version 4.630.0.0 (build 23986141,
+`MilesMorales.exe` SHA-256 `0cfe5e52…f22d3256`, recorded in `sheets/compatibility.json`).
+Both players need the same game version and the same Miles Together version.
+
+## How it works
+
+The release is one file, `winmm.dll`, placed beside the game. The game imports
+`winmm.dll`, so Windows loads the mod with it; every real winmm call is passed on to
+Windows' own copy. The mod then:
+
+1. checks the executable against `sheets/compatibility.json` and the byte signatures in
+   `sheets/native_functions.json`, and does nothing if anything differs;
+2. hooks one per-frame function with MinHook;
+3. each frame reads the local hero's transform, 241 joints and suit part ids;
+4. sends them over one TCP connection (`src/net.cpp`, packing in `src/codec.cpp`);
+5. spawns the game's own Miles actor as the other player's double, dresses it with the
+   game's skin manager, and writes the received joints into it.
+
+The game's models, textures, animations and sounds are never shipped. They are read
+from each player's own installed copy while the game runs.
+
+## The sheets are the source of truth
+
+Everything the mod touches is a row in `sheets/*.json`: native functions and data,
+structure offsets, assets, network messages, settings, the Melty contract, the test
+checks and the systems that tie them together. `tools/gen_sheets.py` turns each row into
+one piece of `src/generated/sheets.h`; the C++ uses no address or offset that is not in
+a sheet. Change the sheet first, then the code.
+
+`tools/preflight.py` lays the sheets over each other and lists every unfilled cell,
+every unresolved reference, every native row not verified in the running game, and every
+row no system uses. A build starts only when it is clean. `--stage release` also requires
+every system's `verification` to be `passed`.
+
+## Build
+
+Needs Python 3.10+ and [llvm-mingw](https://github.com/mstorsjo/llvm-mingw).
 
 ```powershell
-python tools/preflight.py --report reports/preflight.json
-```
-
-The build must stop if this command fails. Run the build-gate tests with:
-
-```powershell
+$env:MILESTOGETHER_LLVM_MINGW = "C:\path\to\llvm-mingw-...-ucrt-x86_64"
+python tools/build.py                 # preflight, generate, compile, codec test, package
+python tools/build.py --stage release # the same, and every system must be verified
 python -m unittest discover -s tests -v
 ```
 
-## Research tools
+The package is `dist/MilesTogether-<version>.zip`: `winmm.dll` plus
+`MilesTogether/README.txt`, `LICENSE.txt` and `THIRD-PARTY-NOTICES.txt`.
 
-`tools/inspect_native.py` and `tools/inspect_rtti.py` locate bounded native-code
-candidates in the player's executable. `tools/trace_player.py` verifies the game's
-hash and hook bytes, temporarily attaches an observation-only Frida callback, and
-detaches after a bounded run. These are developer tools, not an installer or a game.
-`tools/inspect_assets.py` locates/extracts selected assets for private research.
-`tools/read_config.py` reads selected config and actor component records without
-modifying them. The generic asset parsers validate container and payload boundaries.
-Private traces, game-derived disassembly/decompilation and captures belong outside
-this project and must never be included in a release.
+## Playing without Melty
 
-The tested executable is Steam version 4.630.0.0 (build 23986141), SHA-256
-`0cfe5e529369bd3eac642b56ce9ad068b47bb1a294ac1ea1ef7ef4dcf22d3256`.
-No compatibility with another build is claimed.
+Copy `winmm.dll` into the game's folder on both PCs. The mod keeps its files in
+`%LOCALAPPDATA%\MilesTogether`:
 
-## Publication requirements
+- `melty.properties` holds `join=<host address>` on the joining PC, and `join=` (empty)
+  on the host;
+- `melty.log` gets `Melty join address: <address>` from the host and
+  `Melty joined: <address>` from the joiner;
+- `MilesTogether.log` is the mod's own diary of the session.
 
-Before release: implement and test two independently controlled actors sharing
-combat and objectives; verify every supported campaign/side-activity transition;
-verify progress for two distinct saves; package a complete native loader/runtime;
-validate Melty's install recipe and one-click check; test actual host/join with two
-copies; capture this co-op version in the host game; pass Melty's release tests.
-`melty.recipe.draft.json` records Melty's proposed launch/join contract. Its DLL and
-ZIP package are unbuilt, and the recipe has not passed validation or one-click checks.
-Creator approval is required for final publication. No packages or gameplay media
-have been uploaded, and no Melty listing exists for this project.
+## Developer aids
 
-Original code: MIT, with remixes allowed by the creator. See `LICENSE` and
-`THIRD-PARTY-NOTICES.md`. The game and its content remain their owners' property
-and are read from each player's own installed copy.
+- `tools/echo_peer.py <host:port>` joins a hosting game and plays the host's own poses
+  back to it, so one PC can exercise the real network path.
+- A file named `mirror.txt` in `%LOCALAPPDATA%\MilesTogether` shows a mirrored double
+  beside the player when nobody is connected.
+- Melty's test runs use the same mirror and report the checks in `sheets/test_checks.json`.
+- A second copy of the game on the same PC can join the first, but the game itself does
+  not let a second copy past its main menu, so real two-player play needs two PCs.
+
+`MODLOG.md` is the journal: every verified address, every dead end, and how each was
+found. Decompiled game code, extracted assets and captures stay outside this project.
+
+## Licence and credits
+
+Original code: MIT, by ucman, written with Claude. Remixes are welcome. See `LICENSE`
+and `THIRD-PARTY-NOTICES.md`. Not affiliated with Sony Interactive Entertainment,
+Insomniac Games, Nixxes or Marvel; the game and its content remain their owners'
+property.

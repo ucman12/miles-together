@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "mode": "installed",
   "games": [{"role": "primary", "slug": "custom-marvels-spider-man-miles-morales"}],
-  "components": [{"id": "main", "kind": "main", "label": "Miles Together", "fileName": "MilesTogether-0.1.0.zip", "required": true}],
+  "components": [{"id": "main", "kind": "main", "label": "Miles Together", "fileName": "MilesTogether-*.zip", "required": true}],
   "mappings": [
-    {"component": "main", "from": "version.dll", "to": "{game}"},
-    {"component": "main", "from": "MilesTogether/*", "to": "{game}/MilesTogether"}
+    {"component": "main", "from": "winmm.dll", "to": "{game}"},
+    {"component": "main", "from": "MilesTogether/", "to": "{game}/MilesTogether"}
   ],
   "requirements": [],
   "launch": {"kind": "game"},
@@ -17,5 +17,5 @@
     }
   },
   "runtimeData": ["{localappdata}/MilesTogether"],
-  "notes": {"beforeInstall": "Development recipe only. The named package and native DLL do not exist. Networking and gameplay integration are unimplemented; do not submit or install this recipe."}
+  "test": {"checks": ["hosting-open", "hero-found", "double-spawned", "pose-mirrored"], "minutes": 5}
 }

@@ -1,29 +1,209 @@
 {
-  "name": "systems",
-  "columns": ["id", "behavior", "hook", "verification"],
-  "rows": [
-    {"id": "local_actor", "behavior": "Read local pose and identity without changing the camera.", "hook": "follow_camera_commit", "verification": "passed"},
-    {"id": "second_actor", "behavior": "Both players see and interact with two live characters.", "hook": "spawn_remote_actor", "verification": "pending"},
-    {"id": "input_and_traversal", "behavior": "Independent cameras, locomotion, swing, climb and zip for each player.", "hook": "remote_input", "verification": "pending"},
-    {"id": "actor_ownership", "behavior": "Create, resolve and clean up peer characters through streaming and reconnects.", "hook": "actor_lifetime", "verification": "pending"},
-    {"id": "network_and_clock", "behavior": "Authenticated two-player host-authoritative session; simulation-thread application of bounded messages.", "hook": "simulation_tick", "verification": "pending"},
-    {"id": "combat_and_powers", "behavior": "Shared enemies accept melee, webs, gadgets and Venom from either player.", "hook": "damage_events", "verification": "pending"},
-    {"id": "stealth", "behavior": "Shared detection, camouflage and takedowns affect the same enemies.", "hook": "world_state", "verification": "pending"},
-    {"id": "campaign_objectives", "behavior": "Shared mission objectives and checkpoints advance together end to end.", "hook": "mission_state", "verification": "pending"},
-    {"id": "side_activities", "behavior": "Shared crimes, challenges, side missions and collectibles remain accessible to both players.", "hook": "mission_state", "verification": "pending"},
-    {"id": "world_and_streaming", "behavior": "Consistent enemy and object identities across both copies; existing game assets read locally.", "hook": "world_state", "verification": "pending"},
-    {"id": "cutscenes_and_transitions", "behavior": "Both players traverse cinematic, civilian, scripted and boss sequences together.", "hook": "cutscene_state", "verification": "pending"},
-    {"id": "death_and_retry", "behavior": "A shared mission failure returns both players to the same checkpoint.", "hook": "mission_state", "verification": "pending"},
-    {"id": "rewards_and_saves", "behavior": "Mission completion and rewards persist to both existing saves without overwriting unrelated progress.", "hook": "progress_events", "verification": "pending"}
-  ],
-  "checks": {
-    "local_actor": ["id", "behavior", "hook", "verification"], "second_actor": ["id", "behavior", "hook"],
-    "input_and_traversal": ["id", "behavior", "hook"], "actor_ownership": ["id", "behavior", "hook"],
-    "network_and_clock": ["id", "behavior", "hook"], "combat_and_powers": ["id", "behavior", "hook"],
-    "stealth": ["id", "behavior", "hook"], "campaign_objectives": ["id", "behavior", "hook"],
-    "side_activities": ["id", "behavior", "hook"], "world_and_streaming": ["id", "behavior", "hook"],
-    "cutscenes_and_transitions": ["id", "behavior", "hook"], "death_and_retry": ["id", "behavior", "hook"],
-    "rewards_and_saves": ["id", "behavior", "hook"]
+ "name": "systems",
+ "columns": [
+  "id",
+  "behavior",
+  "uses",
+  "source",
+  "verification",
+  "evidence"
+ ],
+ "rows": [
+  {
+   "id": "compatibility_gate",
+   "behavior": "Do nothing unless the executable's PE identity and every function signature match the sheets.",
+   "uses": [
+    "compatibility:steam_current",
+    "native_functions:frame_tick",
+    "native_functions:spawn_actor",
+    "native_functions:activate_objects",
+    "native_functions:resolve_handle",
+    "native_functions:set_actor_transform",
+    "native_functions:destroy_by_handle",
+    "native_functions:actor_asset_lookup",
+    "native_functions:resolve_selected_look",
+    "native_functions:resolve_visible_body_actor",
+    "native_functions:apply_body_groups"
+   ],
+   "source": "src/game.cpp",
+   "verification": "passed",
+   "evidence": "Live 2026-10-13: on the supported build the log shows 'ready on game 4.630.0.0'; other programs in the game folder that load the file (crash handler, video helper) stay untouched."
   },
-  "references": [{"column": "hook", "sheet": "native_hooks", "key": "id"}]
+  {
+   "id": "frame_hook",
+   "behavior": "Run the mod's tick once per frame on the game thread; catch faults and turn off after the fault limit.",
+   "uses": [
+    "native_functions:frame_tick",
+    "settings:fault_limit",
+    "settings:cost_report_period"
+   ],
+   "source": "src/game.cpp",
+   "verification": "passed",
+   "evidence": "Live: tick ran every frame for a 5-minute soak; logged cost 52 microseconds on average, 1.3 ms at worst, zero faults."
+  },
+  {
+   "id": "local_capture",
+   "behavior": "Read the local hero's transform, joints and suit part ids each frame.",
+   "uses": [
+    "native_functions:resolve_handle",
+    "native_data:local_hero_handle",
+    "layout:actor_joints",
+    "layout:joint_count",
+    "layout:skin_parts",
+    "layout:skin_part_count",
+    "layout:skin_part_stride",
+    "layout:skin_part_config",
+    "layout:object_dense_table",
+    "layout:object_dense_capacity",
+    "layout:component_descriptor_name",
+    "layout:object_actor",
+    "layout:actor_matrix",
+    "layout:actor_invalid_flag",
+    "layout:object_asset",
+    "assets:hero_actor",
+    "native_functions:actor_asset_lookup",
+    "native_data:actor_asset_manager",
+    "settings:send_rate",
+    "assets:puppet_actor"
+   ],
+   "source": "src/game.cpp",
+   "verification": "passed",
+   "evidence": "Live: host log lists the worn suit's part ids; poses left the game at 20 per second while in the city and stopped at the main menu and during a checkpoint reload."
+  },
+  {
+   "id": "double_spawn",
+   "behavior": "Spawn, activate, dress and remove the other player's double.",
+   "uses": [
+    "assets:puppet_actor",
+    "native_functions:actor_asset_lookup",
+    "native_data:actor_asset_manager",
+    "native_functions:spawn_actor",
+    "native_functions:activate_objects",
+    "native_data:object_manager",
+    "native_functions:destroy_by_handle",
+    "layout:object_flags",
+    "layout:object_index",
+    "layout:object_generation",
+    "layout:skin_add_parts_vfunc",
+    "layout:skin_list_items",
+    "layout:skin_list_count",
+    "layout:skin_item_stride",
+    "layout:skin_item_config",
+    "settings:spawn_settle_frames",
+    "settings:max_suit_parts",
+    "native_functions:resolve_selected_look",
+    "native_functions:resolve_visible_body_actor",
+    "native_functions:apply_body_groups",
+    "layout:look_entries",
+    "layout:look_entry_count",
+    "settings:look_refresh_frames",
+    "settings:look_refresh_period"
+   ],
+   "source": "src/game.cpp",
+   "verification": "passed",
+   "evidence": "Live: double spawned, was dressed in a suit that was not loaded on this game (Homemade Suit while the player wore the Bodega Cat Suit) with its mask shown, followed a suit change, and came back after a checkpoint reload."
+  },
+  {
+   "id": "double_pose",
+   "behavior": "Place the double and write interpolated joints every frame.",
+   "uses": [
+    "native_functions:resolve_handle",
+    "native_functions:set_actor_transform",
+    "layout:actor_joints",
+    "settings:interpolation_delay",
+    "settings:teleport_distance",
+    "layout:actor_transform_state",
+    "layout:joint_count",
+    "layout:actor_invalid_flag",
+    "layout:object_actor"
+   ],
+   "source": "src/game.cpp",
+   "verification": "passed",
+   "evidence": "Live: recorded clip shows the double running, climbing and landing in step with the poses it was sent; Melty test check pose-mirrored passed (written poses stay in place between frames)."
+  },
+  {
+   "id": "pose_codec",
+   "behavior": "Pack and unpack poses: quantized rotations and positions, changed-joint mask, scaled joints.",
+   "uses": [
+    "net_messages:pose",
+    "layout:joint_count"
+   ],
+   "source": "src/codec.cpp",
+   "verification": "passed",
+   "evidence": "tests/codec_test.cpp passes in every build: round trip within tolerance, dead-band never drifts past its slack, truncated and baseless input refused. Live traffic 40 to 60 KB/s."
+  },
+  {
+   "id": "session",
+   "behavior": "Host on a TCP port or join the address from Melty; hello, suit, pose, away, ping; drop a silent peer.",
+   "uses": [
+    "net_messages:hello",
+    "net_messages:suit",
+    "net_messages:pose",
+    "net_messages:away",
+    "net_messages:ping",
+    "settings:protocol_version",
+    "settings:default_port",
+    "settings:port_attempts",
+    "settings:send_rate",
+    "settings:peer_timeout",
+    "settings:join_timeout"
+   ],
+   "source": "src/net.cpp",
+   "verification": "passed",
+   "evidence": "Live with two copies of the game on one PC: host listened, second copy connected and exchanged hello, host accepted it again after an 8 s stall. With the echo test peer: suit, pose, away and ping all flowed both ways. Not tested: two PCs over the internet through Melty's relay."
+  },
+  {
+   "id": "melty_files",
+   "behavior": "Read join= at start, empty the log, write the join address, joined and failed lines.",
+   "uses": [
+    "melty_contract:folder",
+    "melty_contract:join_file",
+    "melty_contract:join_key",
+    "melty_contract:log_file",
+    "melty_contract:host_line",
+    "melty_contract:joined_line",
+    "melty_contract:failed_line",
+    "melty_contract:mod_id"
+   ],
+   "source": "src/melty.cpp",
+   "verification": "passed",
+   "evidence": "Live: host wrote 'Melty join address: <host LAN address>:47584'; second copy read join=, emptied the log and wrote 'Melty joined: <host LAN address>:47584'. setup_multiplayer read both logs: joined, matches host."
+  },
+  {
+   "id": "test_mode",
+   "behavior": "In a Melty test run, show a mirrored double through the full codec and report the checks.",
+   "uses": [
+    "melty_contract:test_folder",
+    "melty_contract:slug",
+    "net_messages:pose",
+    "test_checks:hero-found",
+    "test_checks:double-spawned",
+    "test_checks:pose-mirrored",
+    "test_checks:hosting-open"
+   ],
+   "source": "src/melty.cpp",
+   "verification": "passed",
+   "evidence": "Live dry run with a test file: checks file received pass hosting-open, pass hero-found, pass double-spawned, pass pose-mirrored."
+  },
+  {
+   "id": "loader_proxy",
+   "behavior": "Load as winmm.dll beside the game and pass every winmm.dll export on to Windows' own copy.",
+   "uses": [
+    "compatibility:steam_current",
+    "design:loader"
+   ],
+   "source": "src/proxy.cpp",
+   "verification": "passed",
+   "evidence": "Live: the game loads the file as winmm.dll at start and plays normally; all 181 winmm exports are forwarded with Windows' own ordinals."
+  }
+ ],
+ "references": [
+  {
+   "column": "uses",
+   "qualified": true
+  }
+ ],
+ "release_columns": [
+  "verification"
+ ]
 }

@@ -1,0 +1,66 @@
+{
+ "name": "net_messages",
+ "columns": [
+  "id",
+  "code",
+  "fields",
+  "sent_when",
+  "purpose"
+ ],
+ "rows": [
+  {
+   "id": "hello",
+   "code": 1,
+   "fields": [
+    "magic:u32",
+    "protocol:u16",
+    "game_build:u32"
+   ],
+   "sent_when": "Once by each side right after the TCP connection opens.",
+   "purpose": "Refuse a peer on another protocol or game build."
+  },
+  {
+   "id": "suit",
+   "code": 2,
+   "fields": [
+    "count:u8",
+    "config_ids:u64[count]"
+   ],
+   "sent_when": "After hello and whenever the sender's suit parts change.",
+   "purpose": "Dress the double in the sender's suit."
+  },
+  {
+   "id": "pose",
+   "code": 3,
+   "fields": [
+    "time_ms:u32",
+    "position:f32[3]",
+    "rotation:i16[4]",
+    "changed_joints:bitset",
+    "joints:quat48+pos48 per changed joint",
+    "scaled_joints:u8 count then index+u8[3]"
+   ],
+   "sent_when": "At the configured send rate while the sender's hero exists.",
+   "purpose": "Place and pose the double."
+  },
+  {
+   "id": "away",
+   "code": 4,
+   "fields": [
+    "time_ms:u32"
+   ],
+   "sent_when": "When the sender's hero stops existing, for example in menus and loading.",
+   "purpose": "Hide the double until poses resume."
+  },
+  {
+   "id": "ping",
+   "code": 5,
+   "fields": [
+    "time_ms:u32"
+   ],
+   "sent_when": "Once per second.",
+   "purpose": "Keep the link alive and detect a lost peer."
+  }
+ ],
+ "references": []
+}

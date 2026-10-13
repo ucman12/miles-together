@@ -1,0 +1,96 @@
+{
+ "name": "settings",
+ "columns": [
+  "id",
+  "value",
+  "unit",
+  "purpose"
+ ],
+ "rows": [
+  {
+   "id": "protocol_version",
+   "value": 1,
+   "unit": "version",
+   "purpose": "Bumped whenever a message layout changes."
+  },
+  {
+   "id": "default_port",
+   "value": 47584,
+   "unit": "tcp port",
+   "purpose": "First port the host tries to listen on."
+  },
+  {
+   "id": "port_attempts",
+   "value": 16,
+   "unit": "count",
+   "purpose": "Consecutive ports tried when one is taken."
+  },
+  {
+   "id": "send_rate",
+   "value": 20,
+   "unit": "hz",
+   "purpose": "Pose messages per second."
+  },
+  {
+   "id": "interpolation_delay",
+   "value": 120,
+   "unit": "ms",
+   "purpose": "How far behind the newest pose the double is shown, so motion is smooth."
+  },
+  {
+   "id": "peer_timeout",
+   "value": 8000,
+   "unit": "ms",
+   "purpose": "Silence after which the peer is dropped."
+  },
+  {
+   "id": "join_timeout",
+   "value": 90000,
+   "unit": "ms",
+   "purpose": "How long a joiner keeps trying before it reports failure."
+  },
+  {
+   "id": "spawn_settle_frames",
+   "value": 90,
+   "unit": "frames",
+   "purpose": "Frames the local hero must exist before a double is spawned."
+  },
+  {
+   "id": "fault_limit",
+   "value": 3,
+   "unit": "count",
+   "purpose": "Caught faults after which the mod turns itself off for the session."
+  },
+  {
+   "id": "teleport_distance",
+   "value": 40,
+   "unit": "m",
+   "purpose": "Jump between poses that is shown as a snap, not a glide."
+  },
+  {
+   "id": "max_suit_parts",
+   "value": 8,
+   "unit": "count",
+   "purpose": "Most suit part ids carried in one suit message."
+  },
+  {
+   "id": "look_refresh_frames",
+   "value": 45,
+   "unit": "frames",
+   "purpose": "How often the double's mask and hood are applied again while its suit is still loading."
+  },
+  {
+   "id": "look_refresh_period",
+   "value": 15000,
+   "unit": "ms",
+   "purpose": "How long after a spawn the mask and hood keep being applied again."
+  },
+  {
+   "id": "cost_report_period",
+   "value": 300000,
+   "unit": "ms",
+   "purpose": "How often the mod writes its per-frame cost to its log."
+  }
+ ],
+ "references": []
+}

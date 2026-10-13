@@ -1,21 +1,86 @@
 {
-  "name": "design",
-  "columns": ["id", "value", "evidence"],
-  "rows": [
-    {"id": "title", "value": "Miles Together", "evidence": "Working title selected by the builder; editable before publication."},
-    {"id": "host", "value": "custom-marvels-spider-man-miles-morales", "evidence": "Creator selected Miles Morales; Melty search_games confirmed this installed-host slug."},
-    {"id": "players", "value": 2, "evidence": "Creator: online 2 player co-op."},
-    {"id": "mission_mode", "value": "shared", "evidence": "Creator: Shared missions."},
-    {"id": "progress", "value": "both_players", "evidence": "Creator: both + mit."},
-    {"id": "license", "value": "MIT", "evidence": "Creator: both + mit."},
-    {"id": "remix", "value": true, "evidence": "Creator accepted MIT with remixes allowed."},
-    {"id": "characters", "value": "two_miles_existing_suits", "evidence": "Smallest design default: existing Miles abilities and separate existing suit choices; no new character requested."},
-    {"id": "first_minute", "value": "join_friend_and_enter_shared_encounter", "evidence": "Derived from requested online shared-mission co-op."},
-    {"id": "release_goal", "value": "all_campaign_and_side_activities", "evidence": "Creator: end to end with all activities accessible at the same time for both player."},
-    {"id": "window_arrangement", "value": "preserve", "evidence": "Creator requires keeping the chosen host and window arrangement."},
-    {"id": "save_policy", "value": "backup_then_merge_verified_progress_events", "evidence": "Both saves retain completion and rewards; never replace a guest save with the host save."},
-    {"id": "publication_gate", "value": "real_two_player_gameplay_and_verified_one_click_install", "evidence": "Creator requires actual playable build, real gameplay media, one_click_check, multiplayer join test and passing test_release."}
-  ],
-  "checks": "all",
-  "references": []
+ "name": "design",
+ "columns": [
+  "id",
+  "value",
+  "evidence"
+ ],
+ "rows": [
+  {
+   "id": "title",
+   "value": "Miles Together",
+   "evidence": "Working title chosen by the builder; the creator can rename it."
+  },
+  {
+   "id": "version",
+   "value": "0.1.0",
+   "evidence": "First playable release of the agreed free-roam scope."
+  },
+  {
+   "id": "host",
+   "value": "custom-marvels-spider-man-miles-morales",
+   "evidence": "Creator picked Miles Morales on Melty's Create page; search_games returned this installed-host slug."
+  },
+  {
+   "id": "players",
+   "value": 2,
+   "evidence": "Creator: online 2 player co-op."
+  },
+  {
+   "id": "version_scope",
+   "value": "free_roam_presence",
+   "evidence": "Creator, 2026-10-12: \"free roam first\". Each player sees the other's Miles in the open city."
+  },
+  {
+   "id": "first_minute",
+   "value": "press_play_load_save_see_friend_swing_by",
+   "evidence": "Derived from the agreed free-roam scope: host presses Play, friend joins through Melty, both load a save and meet in the city."
+  },
+  {
+   "id": "world_model",
+   "value": "own_world_own_save",
+   "evidence": "Agreed scope: each player keeps their own game and save; enemies and missions are not shared in this version."
+  },
+  {
+   "id": "characters",
+   "value": "two_miles_each_in_own_suit",
+   "evidence": "Each player's equipped suit parts are sent to the other game and applied to their double."
+  },
+  {
+   "id": "later_versions",
+   "value": "shared_enemies_missions_saves",
+   "evidence": "Creator's original goal, kept as the roadmap; not part of this version."
+  },
+  {
+   "id": "license",
+   "value": "MIT",
+   "evidence": "Creator: both + mit."
+  },
+  {
+   "id": "remix",
+   "value": true,
+   "evidence": "Creator accepted MIT with remixes allowed."
+  },
+  {
+   "id": "window_arrangement",
+   "value": "preserve",
+   "evidence": "Creator requires keeping the chosen host and its window arrangement; the mod never changes display settings."
+  },
+  {
+   "id": "save_policy",
+   "value": "never_touch_saves",
+   "evidence": "This version reads the player's pose and suit only; it writes no save or config of the game."
+  },
+  {
+   "id": "loader",
+   "value": "winmm.dll",
+   "evidence": "The game imports winmm.dll directly and Windows searches the game's folder first for it. A version.dll proxy was tried first and never loaded: the game process took Windows' own copy."
+  },
+  {
+   "id": "known_limits",
+   "value": "no_web_lines_no_shared_enemies_second_copy_menu",
+   "evidence": "Seen in testing: the other player's web lines and effects are not drawn; enemies and missions are per player; a second copy of the game on the same PC cannot get past its own main menu (true without the mod too), so two-player play needs two PCs."
+  }
+ ],
+ "references": []
 }

@@ -1,0 +1,72 @@
+{
+ "name": "melty_contract",
+ "columns": [
+  "id",
+  "value",
+  "purpose",
+  "evidence"
+ ],
+ "rows": [
+  {
+   "id": "folder",
+   "value": "MilesTogether",
+   "purpose": "The mod's own folder under the player's local app data, for Melty files.",
+   "evidence": "setup_multiplayer contract, 2026-10-12."
+  },
+  {
+   "id": "join_file",
+   "value": "melty.properties",
+   "purpose": "Read at start; key join. Empty means host.",
+   "evidence": "setup_multiplayer contract."
+  },
+  {
+   "id": "join_key",
+   "value": "join",
+   "purpose": "Key holding the host's address when joining.",
+   "evidence": "setup_multiplayer contract."
+  },
+  {
+   "id": "log_file",
+   "value": "melty.log",
+   "purpose": "Emptied at start; Melty reads the lines below from it.",
+   "evidence": "setup_multiplayer contract."
+  },
+  {
+   "id": "host_line",
+   "value": "Melty join address: ",
+   "purpose": "Written once the host is listening, followed by address:port.",
+   "evidence": "setup_multiplayer contract."
+  },
+  {
+   "id": "joined_line",
+   "value": "Melty joined: ",
+   "purpose": "Written by a joiner once the hello exchange with the host succeeds.",
+   "evidence": "setup_multiplayer contract."
+  },
+  {
+   "id": "failed_line",
+   "value": "Melty join failed: ",
+   "purpose": "Written by a joiner that gives up, followed by the reason.",
+   "evidence": "setup_multiplayer contract."
+  },
+  {
+   "id": "test_folder",
+   "value": "Melty/test",
+   "purpose": "Under local app data. Melty test runs drop <slug>.json here; the mod then reports its checks.",
+   "evidence": "Melty recipe test documentation."
+  },
+  {
+   "id": "slug",
+   "value": "miles-together",
+   "purpose": "The listing's slug; names the test-run file <slug>.json.",
+   "evidence": "create_mod, 2026-10-12: draft d2500e08-1d7d-4e9c-ab0e-cc0dff30f215."
+  },
+  {
+   "id": "mod_id",
+   "value": "d2500e08-1d7d-4e9c-ab0e-cc0dff30f215",
+   "purpose": "Melty draft id, reused when resuming and uploading.",
+   "evidence": "create_mod, 2026-10-12."
+  }
+ ],
+ "references": []
+}

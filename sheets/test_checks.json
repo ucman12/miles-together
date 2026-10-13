@@ -1,0 +1,31 @@
+{
+ "name": "test_checks",
+ "columns": [
+  "id",
+  "passes_when",
+  "fails_when"
+ ],
+ "rows": [
+  {
+   "id": "hero-found",
+   "passes_when": "The local hero object, its actor and its 241-joint rig are readable for the settle period.",
+   "fails_when": "No hero within the run."
+  },
+  {
+   "id": "double-spawned",
+   "passes_when": "The mirrored double exists, is activated and has at least one suit part.",
+   "fails_when": "Spawn returned nothing, activation did not stick, or no suit part appeared within 20 seconds."
+  },
+  {
+   "id": "pose-mirrored",
+   "passes_when": "Poses went through encode and decode and were written to the live double for 300 frames, and the game kept each written pose until the next frame.",
+   "fails_when": "The double vanished, or the game overwrote its pose between frames."
+  },
+  {
+   "id": "hosting-open",
+   "passes_when": "The session is listening and the join address line is in melty.log, or a join completed.",
+   "fails_when": "No port could be opened."
+  }
+ ],
+ "references": []
+}

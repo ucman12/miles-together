@@ -1,0 +1,38 @@
+{
+ "name": "native_data",
+ "columns": [
+  "id",
+  "rva",
+  "type",
+  "purpose",
+  "evidence",
+  "runtime_verified"
+ ],
+ "rows": [
+  {
+   "id": "object_manager",
+   "rva": "0x83F8C00",
+   "type": "void*",
+   "purpose": "Object manager passed to activate_objects.",
+   "evidence": "Constant operand in the engine's own activate and create calls; used in the live activation.",
+   "runtime_verified": true
+  },
+  {
+   "id": "actor_asset_manager",
+   "rva": "0x6A49660",
+   "type": "void*",
+   "purpose": "Actor asset table passed to actor_asset_lookup.",
+   "evidence": "Constant operand in spawn_actor; live lookups succeeded.",
+   "runtime_verified": true
+  },
+  {
+   "id": "local_hero_handle",
+   "rva": "0x66FDF38",
+   "type": "uint32_t",
+   "purpose": "Handle of the local player's hero object.",
+   "evidence": "Read by the engine's loadout cloner; live resolve matched the camera target's owner.",
+   "runtime_verified": true
+  }
+ ],
+ "references": []
+}

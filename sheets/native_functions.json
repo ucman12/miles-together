@@ -1,0 +1,157 @@
+{
+ "name": "native_functions",
+ "columns": [
+  "id",
+  "rva",
+  "signature",
+  "kind",
+  "returns",
+  "arguments",
+  "purpose",
+  "evidence",
+  "runtime_verified"
+ ],
+ "rows": [
+  {
+   "id": "frame_tick",
+   "rva": "0xEA4AA0",
+   "signature": "488bc4555356574154415541564157488d68a14881ecd800",
+   "kind": "hook",
+   "returns": "void",
+   "arguments": [
+    "void*"
+   ],
+   "purpose": "Once-per-frame game-thread tick (the photo-mode system's pre-update).",
+   "evidence": "Live: 235 calls in 2 s on the same thread as the camera commit; mirror prototype ran 1772 frames from it with zero faults.",
+   "runtime_verified": true
+  },
+  {
+   "id": "spawn_actor",
+   "rva": "0x24735F0",
+   "signature": "48895c2408574881ec90000000488bfa498bd8488bd1488d",
+   "kind": "call",
+   "returns": "void*",
+   "arguments": [
+    "uint64_t",
+    "void*",
+    "const float*"
+   ],
+   "purpose": "Create a game object from a loaded actor asset at a transform.",
+   "evidence": "Called by the photo-mode doppelganger spawn handler; live call returned an object with 16 components for the Miles actor.",
+   "runtime_verified": true
+  },
+  {
+   "id": "activate_objects",
+   "rva": "0x1E24CC0",
+   "signature": "48894c2408554154415541564157488dac2460ffffff4881",
+   "kind": "call",
+   "returns": "void*",
+   "arguments": [
+    "void*",
+    "void*",
+    "uint32_t"
+   ],
+   "purpose": "Activate freshly created objects so their components run and render.",
+   "evidence": "Live: object flags went 0x20A to 0x220B and the puppet rendered afterwards.",
+   "runtime_verified": true
+  },
+  {
+   "id": "resolve_handle",
+   "rva": "0x1AA8E20",
+   "signature": "448b01418bd0c1ea1481e2ff070000742d4181e0ffff0f00",
+   "kind": "call",
+   "returns": "void*",
+   "arguments": [
+    "const uint32_t*"
+   ],
+   "purpose": "Turn an object handle into a live object pointer, or null once it is gone.",
+   "evidence": "Live: resolved the puppet, and returned null one second after destroy.",
+   "runtime_verified": true
+  },
+  {
+   "id": "set_actor_transform",
+   "rva": "0x1E278C0",
+   "signature": "40534883ec400f100233c04c8bca0f1019488bd90f105110",
+   "kind": "call",
+   "returns": "void",
+   "arguments": [
+    "void*",
+    "const float*",
+    "void*"
+   ],
+   "purpose": "Move an actor to a new world transform.",
+   "evidence": "Live: puppet followed the hero for 1772 frames.",
+   "runtime_verified": true
+  },
+  {
+   "id": "destroy_by_handle",
+   "rva": "0x24736F0",
+   "signature": "894c24084883ec28488d4c2430e81e5763ff4885c0740848",
+   "kind": "call",
+   "returns": "void",
+   "arguments": [
+    "uint32_t"
+   ],
+   "purpose": "Queue an object for the engine's deferred destroy.",
+   "evidence": "Live: puppet disappeared and its handle resolved to null; game stayed stable.",
+   "runtime_verified": true
+  },
+  {
+   "id": "actor_asset_lookup",
+   "rva": "0x1AA7C80",
+   "signature": "40534883ec20488bd98bc248b900000000ffffffff4c8bc2",
+   "kind": "call",
+   "returns": "void*",
+   "arguments": [
+    "void*",
+    "uint64_t"
+   ],
+   "purpose": "Check that an actor asset is loaded before spawning from it.",
+   "evidence": "Live: returned the loaded Miles actor asset; returned null for assets that are not loaded.",
+   "runtime_verified": true
+  },
+  {
+   "id": "resolve_selected_look",
+   "rva": "0x5AB7A0",
+   "signature": "4883ec28488bc1488b49404885c97404488b49108b504885",
+   "kind": "call",
+   "returns": "void*",
+   "arguments": [
+    "void*"
+   ],
+   "purpose": "The look a RandomLook component has chosen: its list of body groups (mask, hood, body).",
+   "evidence": "Documented by norfmare's first-person mod for this build; live call on hero and double returned the same four groups.",
+   "runtime_verified": true
+  },
+  {
+   "id": "resolve_visible_body_actor",
+   "rva": "0x5AB670",
+   "signature": "48896c2420564883ec20488b314885f67406807e5f007402",
+   "kind": "call",
+   "returns": "void*",
+   "arguments": [
+    "void*"
+   ],
+   "purpose": "The actor that carries an object's visible suit model.",
+   "evidence": "Documented by norfmare's first-person mod; live call returned a separate visible actor for hero and double.",
+   "runtime_verified": true
+  },
+  {
+   "id": "apply_body_groups",
+   "rva": "0x5AC830",
+   "signature": "4585c00f84c500000048895c2410565741564883ec50488b",
+   "kind": "call",
+   "returns": "void",
+   "arguments": [
+    "void*",
+    "const void*",
+    "uint32_t",
+    "bool"
+   ],
+   "purpose": "Show a look's body groups on an actor.",
+   "evidence": "Live: the double had no head in the Homemade Suit until this call showed its mask.",
+   "runtime_verified": true
+  }
+ ],
+ "references": []
+}
