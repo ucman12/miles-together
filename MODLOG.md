@@ -135,3 +135,5 @@ Per-frame tick choice, puppet destroy, suit change sync, compact pose packets, t
 - Creator: wait for a two-device test before publishing. They plan to use a Steam Deck signed in to their second Steam account.
 - Steam Deck runs the game through Proton, which uses its own winmm unless told otherwise. Launch option needed: `WINEDLLOVERRIDES="winmm=n,b" %command%`. Not tested.
 - This PC's firewall already allows the game inbound on TCP and UDP for all profiles, so this PC can host and the Deck can join at `<host LAN address>:47584`.
+
+- Later the same day: the creator will use a second Windows PC instead of a Steam Deck. Steps are in `NEXT-STEPS.md`. Work committed locally on branch `free-roam-0.1.0`; nothing pushed, nothing published.
