@@ -90,6 +90,15 @@
    ],
    "sent_when": "By the host when a shared enemy stops existing or leaves range.",
    "purpose": "Remove that puppet on the joiner."
+  },
+  {
+   "id": "crime_request",
+   "code": 9,
+   "fields": [
+    "(empty body)"
+   ],
+   "sent_when": "By the joiner when its player chooses Start a crime (test).",
+   "purpose": "Ask the host's game to start a crime, so both players share one."
   }
  ],
  "references": []

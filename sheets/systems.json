@@ -253,7 +253,9 @@
     "layout:rig_joint_count",
     "settings:anim_rig_slot_count",
     "native_functions:request_actor_asset",
-    "settings:asset_settle_time"
+    "settings:asset_settle_time",
+    "settings:enemy_drop_grace",
+    "settings:puppet_report_period"
    ],
    "source": "src/game.cpp",
    "verification": "pending",
@@ -292,6 +294,19 @@
    "source": "src/game.cpp",
    "verification": "pending",
    "evidence": "Probes on one PC: added items showed with our labels and their selection reached menu_select; warp_object moved a standing hero 57 m; forcing the crime cooldown picked a crime. Not yet built. Built and tested on one PC with tools/echo_peer.py: Start a crime (test) showed and picked a crime; Go to your friend showed only while connected and moved a perched hero 61 m to the friend (139.5, 7.4, -1986.1 to 181.5, 1, -1941.1) and he stayed, with the warp_action_release byte set. Not yet tested on two PCs."
+  },
+  {
+   "id": "shared_crimes",
+   "behavior": "One set of crimes: while joined, the joiner's own random crime countdown is held so its game starts none, and its Start a crime (test) asks the host's game to start one instead.",
+   "uses": [
+    "net_messages:crime_request",
+    "settings:joiner_crime_hold",
+    "native_data:random_crime_system",
+    "layout:crime_cooldown"
+   ],
+   "source": "src/game.cpp",
+   "verification": "pending",
+   "evidence": "Not yet tested."
   }
  ],
  "references": [

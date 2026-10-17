@@ -20,6 +20,11 @@ void SubmitEnemy(std::uint32_t id, std::uint64_t asset, std::uint8_t joint_count
 // Host: that enemy is no longer shared.
 void SubmitEnemyGone(std::uint32_t id);
 
+// Joiner: ask the host's game to start a crime (systems/shared_crimes).
+void SubmitCrimeRequest();
+// Host: true once after the joiner asked for a crime.
+bool TakeCrimeRequest();
+
 // Joiner: one of the host's enemies, interpolated like the other player.
 struct RemoteEnemy {
   std::uint32_t id = 0;

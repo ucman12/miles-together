@@ -9,7 +9,7 @@
  "rows": [
   {
    "id": "protocol_version",
-   "value": 3,
+   "value": 4,
    "unit": "version",
    "purpose": "Bumped whenever a message layout changes."
   },
@@ -186,6 +186,24 @@
    "value": 10,
    "unit": "m",
    "purpose": "If you are this far from the warp target a second later (a perch pulled you back), warp again, once."
+  },
+  {
+   "id": "enemy_drop_grace",
+   "value": 3,
+   "unit": "scans",
+   "purpose": "A shared enemy that still exists but drops out of the host's scan (out of range, not animating) keeps being shared for this many scans, so a one-second hiccup does not remove and respawn it on the joiner."
+  },
+  {
+   "id": "puppet_report_period",
+   "value": 5000,
+   "unit": "ms",
+   "purpose": "How often the joiner logs a summary of the enemy copies it shows (how many, how far from you, how many waiting to load)."
+  },
+  {
+   "id": "joiner_crime_hold",
+   "value": 60,
+   "unit": "s",
+   "purpose": "While joined to a host, the joiner's random crime countdown is held at least this high, so its own game starts no crimes; the host's crimes are the shared ones."
   }
  ],
  "references": []

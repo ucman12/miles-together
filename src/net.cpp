@@ -69,6 +69,7 @@ HeardEnemy g_heard_enemies[sheets::settings::max_enemies];
 
 bool g_open = false;  // listening, or joined
 bool g_hosting = false;
+bool g_crime_requested = false;  // host: the joiner asked for a crime
 
 void QueueFrameLocked(Message type, const std::uint8_t* body, std::size_t size) {
   const std::uint16_t length = static_cast<std::uint16_t>(size + 1);
@@ -238,6 +239,12 @@ bool HandleFrame(Peer* peer, Message type, const std::uint8_t* body, std::size_t
       std::memcpy(&id, body, 4);
       std::lock_guard<std::mutex> lock(g_mutex);
       for (HeardEnemy& e : g_heard_enemies) if (e.id == id) e.id = 0;
+      return true;
+    }
+    case Message::crime_request: {
+      if (size != 0) { *why = "bad crime request"; return false; }
+      std::lock_guard<std::mutex> lock(g_mutex);
+      if (g_hosting) g_crime_requested = true;
       return true;
     }
     case Message::ping:
@@ -561,6 +568,18 @@ void SubmitEnemyGone(std::uint32_t id) {
   std::lock_guard<std::mutex> lock(g_mutex);
   for (SentEnemy& e : g_sent_enemies) if (e.id == id) e = SentEnemy{};
   if (g_peer_ready) QueueFrameLocked(Message::enemy_gone, reinterpret_cast<const std::uint8_t*>(&id), 4);
+}
+
+void SubmitCrimeRequest() {
+  std::lock_guard<std::mutex> lock(g_mutex);
+  if (g_peer_ready) QueueFrameLocked(Message::crime_request, nullptr, 0);
+}
+
+bool TakeCrimeRequest() {
+  std::lock_guard<std::mutex> lock(g_mutex);
+  const bool requested = g_crime_requested;
+  g_crime_requested = false;
+  return requested;
 }
 
 std::uint32_t SampleEnemies(std::uint32_t now_ms, RemoteEnemy* out, std::uint32_t max) {

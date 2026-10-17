@@ -464,8 +464,23 @@ void RequestMissingAsset(std::uint64_t asset, std::uint32_t now) {
   Log("loading actor %016llx for the host's enemy", static_cast<unsigned long long>(asset));
 }
 
-void UpdatePuppets(const net::RemoteEnemy* enemies, std::uint32_t count) {
+float DistanceTo(const float* a, const float* b) {
+  const float dx = a[0] - b[0], dy = a[1] - b[1], dz = a[2] - b[2];
+  return std::sqrt(dx * dx + dy * dy + dz * dz);
+}
+
+// What the joiner shows, summed up in the log every puppet_report_period while there is any.
+struct PuppetReport {
+  std::uint32_t due_ms = 0;
+  std::uint32_t removed_by_game = 0;  // copies the game deleted since the last report
+};
+PuppetReport g_puppet_report;
+
+// `hero` is the local hero's position, for the log; null when unknown.
+void UpdatePuppets(const net::RemoteEnemy* enemies, std::uint32_t count, const float* hero) {
   bool spawned_this_frame = false;
+  std::uint32_t shown = 0, waiting = 0;
+  float nearest = 1e9f, farthest = 0.0f;
   for (Puppet& p : g_puppets) {
     if (p.remote_id == 0) continue;
     bool listed = false;
@@ -484,6 +499,8 @@ void UpdatePuppets(const net::RemoteEnemy* enemies, std::uint32_t count) {
     }
     void* object = p ? Resolve(p->handle) : nullptr;
     if (p && !object) {  // the game removed it, for example on a load
+      ++g_puppet_report.removed_by_game;
+      Log("the game removed the copy of the host's enemy %08x; showing it again", p->remote_id);
       *p = Puppet{};
       p = nullptr;
     }
@@ -498,9 +515,13 @@ void UpdatePuppets(const net::RemoteEnemy* enemies, std::uint32_t count) {
       if (!p) continue;
       if (!LoadedAsset(e.asset)) {
         RequestMissingAsset(e.asset, NowMs());
+        ++waiting;
         continue;
       }
-      if (AssetSettling(e.asset, NowMs())) continue;
+      if (AssetSettling(e.asset, NowMs())) {
+        ++waiting;
+        continue;
+      }
       float matrix[16];
       codec::RigidToMatrix(e.pose.position, e.pose.rotation, matrix);
       object = Native<fn::spawn_actor_t>(fn::spawn_actor_rva)(e.asset, nullptr, matrix);
@@ -517,7 +538,12 @@ void UpdatePuppets(const net::RemoteEnemy* enemies, std::uint32_t count) {
       // spawned puppet has no rig set up of its own to ask.
       p->local_joints = e.joint_count;
       spawned_this_frame = true;
-      Log("showing the host's enemy %08x (actor %016llx, %u joints)", e.id, static_cast<unsigned long long>(e.asset), e.joint_count);
+      if (hero) {
+        Log("showing the host's enemy %08x (actor %016llx, %u joints) at %.0f %.0f %.0f, %.0f m from you", e.id, static_cast<unsigned long long>(e.asset), e.joint_count, e.pose.position[0], e.pose.position[1],
+            e.pose.position[2], DistanceTo(e.pose.position, hero));
+      } else {
+        Log("showing the host's enemy %08x (actor %016llx, %u joints)", e.id, static_cast<unsigned long long>(e.asset), e.joint_count);
+      }
     }
     void* actor = ActorOf(object);
     if (!actor) continue;
@@ -528,7 +554,26 @@ void UpdatePuppets(const net::RemoteEnemy* enemies, std::uint32_t count) {
     Native<fn::set_actor_transform_t>(fn::set_actor_transform_rva)(actor, matrix, static_cast<std::uint8_t*>(actor) + layout::actor_transform_state);
     const std::uint32_t n = e.joint_count < p->local_joints ? e.joint_count : p->local_joints;
     for (std::uint32_t j = 0; j < n; ++j) codec::JointToMatrix(e.pose.joints[j], joints + j * 16);
+    ++shown;
+    if (hero) {
+      const float d = DistanceTo(ActorPosition(actor), hero);
+      nearest = d < nearest ? d : nearest;
+      farthest = d > farthest ? d : farthest;
+    }
   }
+  const std::uint32_t now = NowMs();
+  if (count == 0 && g_puppet_report.removed_by_game == 0) {
+    g_puppet_report.due_ms = now;  // report soon after enemies next arrive
+    return;
+  }
+  if (static_cast<std::int32_t>(now - g_puppet_report.due_ms) < 0) return;
+  g_puppet_report.due_ms = now + settings::puppet_report_period;
+  if (shown > 0 && hero) {
+    Log("enemy copies: %u of %u shown, %.0f to %.0f m from you; %u waiting for their actor to load; %u removed by the game", shown, count, nearest, farthest, waiting, g_puppet_report.removed_by_game);
+  } else {
+    Log("enemy copies: %u of %u shown; %u waiting for their actor to load; %u removed by the game", shown, count, waiting, g_puppet_report.removed_by_game);
+  }
+  g_puppet_report.removed_by_game = 0;
 }
 
 // Host side: which enemies are shared.
@@ -536,6 +581,7 @@ struct Tracked {
   std::uint32_t handle = 0;
   std::uint64_t asset = 0;
   std::uint8_t joints = 0;
+  std::uint8_t missed = 0;  // scans in a row it was not found, while it still exists
 };
 Tracked g_tracked[kMaxEnemies];
 std::uint32_t g_tracked_count = 0;
@@ -587,12 +633,28 @@ void ScanEnemies(const float* const* centers, std::uint32_t center_count, std::u
       if (c.d2 < best[worst].d2) best[worst] = c;
     }
   }
+  // An enemy that still exists but missed this scan (out of range, between animations) is kept
+  // for a few scans, so a one-second hiccup does not remove and respawn it on the joiner.
+  std::uint32_t added = 0, dropped = 0;
+  for (std::uint32_t m = 0; m < found; ++m) {
+    bool known = false;
+    for (std::uint32_t k = 0; k < g_tracked_count; ++k) known = known || g_tracked[k].handle == best[m].t.handle;
+    if (!known) ++added;
+  }
   for (std::uint32_t k = 0; k < g_tracked_count; ++k) {
     bool kept = false;
     for (std::uint32_t m = 0; m < found; ++m) kept = kept || best[m].t.handle == g_tracked[k].handle;
-    if (!kept) net::SubmitEnemyGone(g_tracked[k].handle);
+    if (kept) continue;
+    Tracked t = g_tracked[k];
+    if (t.missed + 1u < settings::enemy_drop_grace && found < kMaxEnemies && Resolve(t.handle)) {
+      ++t.missed;
+      best[found++] = Candidate{range2, t};
+      continue;
+    }
+    net::SubmitEnemyGone(t.handle);
+    ++dropped;
   }
-  if (found != g_tracked_count) Log("sharing %u enemies", found);
+  if (added || dropped) Log("sharing %u enemies (%u new, %u stopped)", found, added, dropped);
   for (std::uint32_t m = 0; m < found; ++m) g_tracked[m] = best[m].t;
   g_tracked_count = found;
 }
@@ -619,7 +681,7 @@ std::uint32_t g_mirror_enemy_ids[kMaxEnemies] = {};
 void SyncEnemies(const Local& local, const net::RemoteView& view, std::uint32_t now) {
   static net::RemoteEnemy enemies[kMaxEnemies];
   if (view.connected && !net::Hosting()) {  // joiner: show the host's enemies
-    UpdatePuppets(enemies, local.valid ? net::SampleEnemies(now, enemies, kMaxEnemies) : 0);
+    UpdatePuppets(enemies, local.valid ? net::SampleEnemies(now, enemies, kMaxEnemies) : 0, local.valid ? ActorPosition(local.actor) : nullptr);
     return;
   }
   const bool sharing = view.connected;
@@ -668,7 +730,7 @@ void SyncEnemies(const Local& local, const net::RemoteView& view, std::uint32_t 
     }
     ++k;
   }
-  if (mirror) UpdatePuppets(enemies, mirrored);
+  if (mirror) UpdatePuppets(enemies, mirrored, ActorPosition(local.actor));
 }
 
 // ---- systems/pause_menu_options ----
@@ -766,12 +828,51 @@ void WarpHero(void* hero_object, const float* matrix) {
   Native<fn::warp_object_t>(fn::warp_object_rva)(action, hero_object, matrix);
 }
 
+// ---- systems/shared_crimes ----
+// One set of crimes: the host's. While joined, the joiner's own crime countdown is held so its
+// game starts none, and its Start a crime asks the host's game instead.
+bool g_holding_crimes = false;
+
+float* CrimeCooldown() { return reinterpret_cast<float*>(g_base + sheets::data::random_crime_system_rva + layout::crime_cooldown); }
+
+void StartCrimeNow() {
+  float* cooldown = CrimeCooldown();
+  if (*cooldown > 0.5f) *cooldown = 0.5f;
+}
+
+void SyncCrimes(const Local& local, const net::RemoteView& view) {
+  const bool joiner = view.connected && !net::Hosting();
+  if (joiner && local.valid) {
+    float* cooldown = CrimeCooldown();
+    const float hold = static_cast<float>(settings::joiner_crime_hold);
+    if (*cooldown < hold) *cooldown = hold;
+    if (!g_holding_crimes) Log("your own random crimes are paused while you play in the host's city; the host's crimes are shared");
+    g_holding_crimes = true;
+  } else if (g_holding_crimes && !view.connected) {
+    g_holding_crimes = false;
+    Log("your own random crimes are back on");
+  }
+  if (net::Hosting() && net::TakeCrimeRequest()) {
+    if (local.valid) {
+      StartCrimeNow();
+      Log("the other player asked for a crime: the crime system picks one now");
+    } else {
+      Log("the other player asked for a crime, but you are not in the city");
+    }
+  }
+}
+
 void RunPauseMenuOptions(const Local& local, const net::RemoteView& view, std::uint32_t now) {
   UpdatePauseMenu(view.connected && !view.away);
+  SyncCrimes(local, view);
   if (g_want_crime.exchange(false)) {
-    float* cooldown = reinterpret_cast<float*>(g_base + sheets::data::random_crime_system_rva + layout::crime_cooldown);
-    if (*cooldown > 0.5f) *cooldown = 0.5f;
-    Log("starting a crime: the crime system picks one now");
+    if (view.connected && !net::Hosting()) {
+      net::SubmitCrimeRequest();
+      Log("starting a crime: asked the host's game to pick one");
+    } else {
+      StartCrimeNow();
+      Log("starting a crime: the crime system picks one now");
+    }
   }
   if (g_want_warp.exchange(false)) {
     if (!local.valid || !view.connected || view.away || !view.has_pose) {

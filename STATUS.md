@@ -45,8 +45,6 @@ The creator has decided to publish nothing further until the whole open world is
 ## What it does not do (yet)
 
 - **Enemies on the joiner don't show reliably.** See above.
-- **Enemy poses can flicker or T-pose on the joiner.** The game resets the copies to their
-  default pose every frame, and the mod writes the host's pose over that.
 - **The joiner's own crimes still run** and are not shared with the host. Only the host's
   crimes are shared.
 - **No fighting together.** The joiner can't damage the host's enemies, and enemies can't
@@ -62,10 +60,22 @@ The creator has decided to publish nothing further until the whole open world is
   network.
 - **Steam Deck / Proton is untested.**
 
+## Built but not yet tested (2026-10-16, uncommitted build, not installed anywhere)
+
+- The joiner logs where each enemy copy is, how far it is from their Miles, whether the game
+  deleted it, and a summary every 5 seconds. This is to find why enemies don't show.
+- The host keeps an enemy shared for 3 seconds after it briefly drops out, instead of removing
+  it at once.
+- One set of crimes: while joined, the joiner's own random crimes are held off, and the joiner's
+  Start a crime asks the host's game to start one. Protocol version 4, so this build and
+  earlier 0.4.0 builds refuse each other.
+- `tools/echo_peer.py --record` / `--replay`: record the enemies a host shares, then play them
+  back to this PC's game as the joiner, so the joiner's side can be tested on one PC.
+
 ## Plan
 
-1. Make shared enemies reliable: find why they don't show, stop the pose flicker, and stop
-   them dropping out for a second.
+1. Make shared enemies reliable: find why they don't show, and stop them dropping out for a
+   second.
 2. One set of crimes: switch off the joiner's own crimes. The joiner's Start a crime asks the
    host.
 3. Fighting together: the joiner's hits damage the host's real enemies, and enemies that
