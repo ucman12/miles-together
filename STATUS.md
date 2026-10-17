@@ -1,6 +1,6 @@
 # Miles Together: what it does and what it does not
 
-Last updated 2026-10-16. "Tested on two PCs" means the creator played it on two Windows PCs
+Last updated 2026-10-17. "Tested on two PCs" means the creator played it on two Windows PCs
 on one home network. "Tested on one PC" means it was checked on the host PC with a test
 tool standing in for the second player.
 
@@ -9,15 +9,15 @@ tool standing in for the second player.
 | Version | What it adds | State |
 |---|---|---|
 | 0.1.0 | Two-player free roam: each player sees the other's Miles | Live on Melty |
-| 0.2.0 | Friend's marker on the minimap | Live on Melty (current public version) |
-| 0.3.0 | Shared time of day and weather | Passed a two-PC test; not published |
+| 0.2.0 | Friend's marker on the minimap | Live on Melty |
+| 0.3.0 | Shared time of day and weather | Live on Melty since 2026-10-17 (current public version) |
 | 0.4.0 | Shared crime enemies, pause-menu options | In progress; not published |
 
-The creator has decided to publish nothing further until the whole open world is shared.
+Source: https://github.com/ucman12/miles-together
 
 ## What it does
 
-### Live on Melty (0.2.0), tested on two PCs
+### Live on Melty, tested on two PCs
 - Two players, each in their own game and save, in the same New York.
 - The other player's Miles moves, swings, climbs and fights, smoothed between updates.
 - Suit changes show on the other player's screen, including suits their game had not loaded.
@@ -26,7 +26,6 @@ The creator has decided to publish nothing further until the whole open world is
 - If the game version doesn't match, the mod switches itself off and the game runs unchanged.
 - Nothing is written to save files.
 
-### 0.3.0, tested on two PCs
 - Time of day and weather follow the host. When the host's changes, the joiner's game
   switches within a few seconds.
 
