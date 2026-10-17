@@ -225,7 +225,8 @@ void RigidToMatrix(const float* position, const float* rotation, float* m) {
   JointToMatrix(joint, m);
 }
 
-std::size_t EncodePose(const Pose& pose, DeltaState* state, std::uint8_t* out) {
+std::size_t EncodePose(const Pose& pose, DeltaState* state, std::uint8_t* out, std::uint32_t count) {
+  if (count > kJointCount) count = kJointCount;
   std::uint8_t* p = out;
   WriteU32(p, pose.time_ms);
   for (float v : pose.position) WriteF32(p, v);
@@ -235,7 +236,7 @@ std::size_t EncodePose(const Pose& pose, DeltaState* state, std::uint8_t* out) {
   std::uint8_t* mask = p;
   std::memset(mask, 0, kMaskBytes);
   p += kMaskBytes;
-  for (std::uint32_t j = 0; j < kJointCount; ++j) {
+  for (std::uint32_t j = 0; j < count; ++j) {
     std::uint8_t packed[12];
     PackJoint(pose.joints[j], packed);
     if (state->primed && NearlySame(packed, state->packed[j])) continue;
@@ -247,7 +248,7 @@ std::size_t EncodePose(const Pose& pose, DeltaState* state, std::uint8_t* out) {
   state->primed = true;
   std::uint8_t* scaled_count = p++;
   *scaled_count = 0;
-  for (std::uint32_t j = 0; j < kJointCount; ++j) {
+  for (std::uint32_t j = 0; j < count; ++j) {
     if (!IsScaled(pose.joints[j])) continue;
     *p++ = static_cast<std::uint8_t>(j);
     for (float s : pose.joints[j].s) *p++ = static_cast<std::uint8_t>(PackScale(s));
@@ -256,7 +257,8 @@ std::size_t EncodePose(const Pose& pose, DeltaState* state, std::uint8_t* out) {
   return static_cast<std::size_t>(p - out);
 }
 
-bool DecodePose(const std::uint8_t* data, std::size_t size, DeltaState* state, Pose* pose) {
+bool DecodePose(const std::uint8_t* data, std::size_t size, DeltaState* state, Pose* pose, std::uint32_t count) {
+  if (count > kJointCount) return false;
   const std::size_t header = 4 + 12 + 8 + kMaskBytes;
   if (size < header + 1) return false;
   const std::uint8_t* p = data;
@@ -272,11 +274,14 @@ bool DecodePose(const std::uint8_t* data, std::size_t size, DeltaState* state, P
   p += kMaskBytes;
   std::uint32_t changed = 0;
   for (std::uint32_t j = 0; j < kJointCount; ++j) {
-    if (mask[j >> 3] & (1u << (j & 7))) ++changed;
+    if (mask[j >> 3] & (1u << (j & 7))) {
+      if (j >= count) return false;  // a joint this rig does not have
+      ++changed;
+    }
   }
-  if (!state->primed && changed != kJointCount) return false;  // a delta with nothing to apply it to
+  if (!state->primed && changed != count) return false;  // a delta with nothing to apply it to
   if (static_cast<std::size_t>(end - p) < static_cast<std::size_t>(changed) * 12 + 1) return false;
-  for (std::uint32_t j = 0; j < kJointCount; ++j) {
+  for (std::uint32_t j = 0; j < count; ++j) {
     if (mask[j >> 3] & (1u << (j & 7))) {
       std::memcpy(state->packed[j], p, 12);
       p += 12;
@@ -289,13 +294,14 @@ bool DecodePose(const std::uint8_t* data, std::size_t size, DeltaState* state, P
   if (static_cast<std::size_t>(end - p) != static_cast<std::size_t>(scaled) * 4) return false;
   for (std::uint32_t i = 0; i < scaled; ++i) {
     const std::uint32_t j = *p++;
-    if (j >= kJointCount) return false;
+    if (j >= count) return false;
     for (float& s : pose->joints[j].s) s = static_cast<float>(static_cast<std::int8_t>(*p++)) * kScaleStep;
   }
   return true;
 }
 
-void Interpolate(const Pose& a, const Pose& b, float t, Pose* out) {
+void Interpolate(const Pose& a, const Pose& b, float t, Pose* out, std::uint32_t count) {
+  if (count > kJointCount) count = kJointCount;
   if (t <= 0.0f) { *out = a; return; }
   if (t >= 1.0f) { *out = b; return; }
   const float dx = b.position[0] - a.position[0], dy = b.position[1] - a.position[1], dz = b.position[2] - a.position[2];
@@ -310,7 +316,7 @@ void Interpolate(const Pose& a, const Pose& b, float t, Pose* out) {
   out->time_ms = a.time_ms + static_cast<std::uint32_t>(static_cast<float>(b.time_ms - a.time_ms) * t);
   for (int i = 0; i < 3; ++i) out->position[i] = a.position[i] + (b.position[i] - a.position[i]) * t;
   blend_quat(a.rotation, b.rotation, out->rotation);
-  for (std::uint32_t j = 0; j < kJointCount; ++j) {
+  for (std::uint32_t j = 0; j < count; ++j) {
     const JointPose& ja = a.joints[j];
     const JointPose& jb = b.joints[j];
     JointPose& jo = out->joints[j];

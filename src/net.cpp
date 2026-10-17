@@ -1,4 +1,5 @@
-// Miles Together - the two-player session (sheet row systems/session).
+// Miles Together - the two-player session (sheet rows systems/session and the network half of
+// systems/world_sync).
 //
 // One TCP connection between two players. The host listens on every address so Melty's
 // relay can carry a friend to it; a joiner connects to the address Melty wrote.
@@ -30,11 +31,15 @@ codec::DeltaState g_send_delta;
 Suit g_local_suit;
 bool g_local_suit_known = false;
 bool g_local_away_sent = false;
+std::uint8_t g_local_lighting = 0;
+bool g_local_lighting_known = false;
 
 // Inbound, written by the session thread.
 bool g_remote_away = true;
 bool g_remote_has_suit = false;
 Suit g_remote_suit;
+bool g_remote_has_world = false;
+std::uint8_t g_remote_lighting = 0;
 Pose g_ring[kRing];
 std::size_t g_ring_count = 0;
 std::size_t g_ring_head = 0;  // index of the newest pose
@@ -42,7 +47,28 @@ std::int32_t g_clock_offset = 0;
 bool g_clock_known = false;
 codec::DeltaState g_receive_delta;
 
+// Shared enemies. Host side: one delta encoder per enemy it sends.
+struct SentEnemy {
+  std::uint32_t id = 0;  // 0 = free
+  codec::DeltaState delta;
+};
+SentEnemy g_sent_enemies[sheets::settings::max_enemies];
+// Joiner side: what the host sent about each enemy.
+constexpr std::size_t kEnemyRing = 4;
+struct HeardEnemy {
+  std::uint32_t id = 0;  // 0 = free
+  std::uint64_t asset = 0;
+  std::uint8_t joint_count = 0;
+  std::uint32_t heard_ms = 0;
+  codec::DeltaState delta;
+  Pose ring[kEnemyRing];
+  std::size_t count = 0;
+  std::size_t head = 0;
+};
+HeardEnemy g_heard_enemies[sheets::settings::max_enemies];
+
 bool g_open = false;  // listening, or joined
+bool g_hosting = false;
 
 void QueueFrameLocked(Message type, const std::uint8_t* body, std::size_t size) {
   const std::uint16_t length = static_cast<std::uint16_t>(size + 1);
@@ -60,6 +86,8 @@ void QueueSuitLocked() {
   QueueFrameLocked(Message::suit, body, 1 + sizeof(std::uint64_t) * g_local_suit.count);
 }
 
+void QueueWorldLocked() { QueueFrameLocked(Message::world, &g_local_lighting, 1); }
+
 void ResetPeerLocked() {
   g_peer_ready = false;
   g_outbound.clear();
@@ -67,6 +95,9 @@ void ResetPeerLocked() {
   g_receive_delta.Reset();
   g_remote_away = true;
   g_remote_has_suit = false;
+  g_remote_has_world = false;
+  for (SentEnemy& e : g_sent_enemies) e = SentEnemy{};
+  for (HeardEnemy& e : g_heard_enemies) e.id = 0;
   g_ring_count = 0;
   g_clock_known = false;
   g_local_away_sent = false;
@@ -129,6 +160,7 @@ bool HandleFrame(Peer* peer, Message type, const std::uint8_t* body, std::size_t
     std::lock_guard<std::mutex> lock(g_mutex);
     g_peer_ready = true;
     if (g_local_suit_known) QueueSuitLocked();
+    if (g_local_lighting_known) QueueWorldLocked();
     return true;
   }
   switch (type) {
@@ -159,6 +191,53 @@ bool HandleFrame(Peer* peer, Message type, const std::uint8_t* body, std::size_t
       g_remote_away = true;
       g_ring_count = 0;
       g_clock_known = false;
+      return true;
+    }
+    case Message::world: {
+      if (size != 1 || body[0] >= sheets::settings::lighting_mode_count) { *why = "bad world state"; return false; }
+      std::lock_guard<std::mutex> lock(g_mutex);
+      g_remote_lighting = body[0];
+      g_remote_has_world = true;
+      return true;
+    }
+    case Message::enemy: {
+      if (size < 13) { *why = "bad enemy"; return false; }
+      std::uint32_t id = 0;
+      std::uint64_t asset = 0;
+      std::memcpy(&id, body, 4);
+      std::memcpy(&asset, body + 4, 8);
+      const std::uint8_t joints = body[12];
+      if (id == 0 || joints == 0 || joints > kJointCount) { *why = "bad enemy"; return false; }
+      std::lock_guard<std::mutex> lock(g_mutex);
+      HeardEnemy* slot = nullptr;
+      for (HeardEnemy& e : g_heard_enemies) if (e.id == id) slot = &e;
+      if (!slot) {
+        for (HeardEnemy& e : g_heard_enemies) if (e.id == 0) { slot = &e; break; }
+        if (!slot) return true;  // more enemies than shown: ignore this one
+        slot->id = id;
+        slot->delta.Reset();
+        slot->count = 0;
+        slot->head = 0;
+      }
+      if (slot->asset != asset || slot->joint_count != joints) {
+        slot->asset = asset;
+        slot->joint_count = joints;
+        slot->delta.Reset();
+        slot->count = 0;
+      }
+      const std::size_t at = slot->count == 0 ? 0 : (slot->head + 1) % kEnemyRing;
+      if (!codec::DecodePose(body + 13, size - 13, &slot->delta, &slot->ring[at], joints)) { *why = "bad enemy pose"; return false; }
+      slot->head = at;
+      if (slot->count < kEnemyRing) ++slot->count;
+      slot->heard_ms = NowMs();
+      return true;
+    }
+    case Message::enemy_gone: {
+      if (size != 4) { *why = "bad enemy_gone"; return false; }
+      std::uint32_t id = 0;
+      std::memcpy(&id, body, 4);
+      std::lock_guard<std::mutex> lock(g_mutex);
+      for (HeardEnemy& e : g_heard_enemies) if (e.id == id) e.id = 0;
       return true;
     }
     case Message::ping:
@@ -318,6 +397,7 @@ void Host() {
   {
     std::lock_guard<std::mutex> lock(g_mutex);
     g_open = true;
+    g_hosting = true;
   }
   Peer peer;
   for (;;) Pump(&peer, listener, 4);
@@ -446,12 +526,82 @@ void SubmitSuit(const Suit& suit) {
   if (g_peer_ready) QueueSuitLocked();
 }
 
+void SubmitWorld(std::uint8_t lighting_mode) {
+  std::lock_guard<std::mutex> lock(g_mutex);
+  if (g_local_lighting_known && g_local_lighting == lighting_mode) return;
+  g_local_lighting = lighting_mode;
+  g_local_lighting_known = true;
+  if (g_peer_ready) QueueWorldLocked();
+}
+
+void SubmitEnemy(std::uint32_t id, std::uint64_t asset, std::uint8_t joint_count, const Pose& pose) {
+  static std::uint8_t body[13 + codec::kMaxPoseBytes];
+  std::lock_guard<std::mutex> lock(g_mutex);
+  if (!g_peer_ready || id == 0) return;
+  SentEnemy* slot = nullptr;
+  for (SentEnemy& e : g_sent_enemies) if (e.id == id) slot = &e;
+  if (!slot) {
+    for (SentEnemy& e : g_sent_enemies) if (e.id == 0) { slot = &e; break; }
+    if (!slot) return;
+    slot->id = id;
+    slot->delta.Reset();
+  }
+  std::memcpy(body, &id, 4);
+  std::memcpy(body + 4, &asset, 8);
+  body[12] = joint_count;
+  const std::size_t size = codec::EncodePose(pose, &slot->delta, body + 13, joint_count);
+  if (g_outbound.size() > kMaxBacklog) {  // the link cannot keep up: send this enemy whole next time
+    slot->delta.Reset();
+    return;
+  }
+  QueueFrameLocked(Message::enemy, body, 13 + size);
+}
+
+void SubmitEnemyGone(std::uint32_t id) {
+  std::lock_guard<std::mutex> lock(g_mutex);
+  for (SentEnemy& e : g_sent_enemies) if (e.id == id) e = SentEnemy{};
+  if (g_peer_ready) QueueFrameLocked(Message::enemy_gone, reinterpret_cast<const std::uint8_t*>(&id), 4);
+}
+
+std::uint32_t SampleEnemies(std::uint32_t now_ms, RemoteEnemy* out, std::uint32_t max) {
+  std::lock_guard<std::mutex> lock(g_mutex);
+  if (!g_peer_ready) return 0;
+  std::uint32_t n = 0;
+  for (HeardEnemy& e : g_heard_enemies) {
+    if (e.id == 0 || e.count == 0 || n >= max) continue;
+    if (now_ms - e.heard_ms > sheets::settings::enemy_timeout) continue;
+    RemoteEnemy& r = out[n++];
+    r.id = e.id;
+    r.asset = e.asset;
+    r.joint_count = e.joint_count;
+    const auto at = [&e](std::size_t back) -> const Pose& { return e.ring[(e.head + kEnemyRing - back) % kEnemyRing]; };
+    if (!g_clock_known) { r.pose = at(0); continue; }
+    const std::uint32_t target = now_ms - static_cast<std::uint32_t>(g_clock_offset) - sheets::settings::enemy_interpolation_delay;
+    if (static_cast<std::int32_t>(target - at(0).time_ms) >= 0) { r.pose = at(0); continue; }
+    bool done = false;
+    for (std::size_t back = 1; back < e.count && !done; ++back) {
+      const Pose& older = at(back);
+      const Pose& newer = at(back - 1);
+      if (static_cast<std::int32_t>(target - older.time_ms) >= 0) {
+        const std::uint32_t span = newer.time_ms - older.time_ms;
+        const float t = span ? static_cast<float>(target - older.time_ms) / static_cast<float>(span) : 1.0f;
+        codec::Interpolate(older, newer, t, &r.pose, e.joint_count);
+        done = true;
+      }
+    }
+    if (!done) r.pose = at(e.count - 1);
+  }
+  return n;
+}
+
 void SampleRemote(std::uint32_t now_ms, RemoteView* out) {
   std::lock_guard<std::mutex> lock(g_mutex);
   out->connected = g_peer_ready;
   out->away = g_remote_away;
   out->has_suit = g_remote_has_suit;
   out->suit = g_remote_suit;
+  out->has_world = g_peer_ready && g_remote_has_world;
+  out->lighting_mode = g_remote_lighting;
   out->has_pose = false;
   if (!g_peer_ready || g_remote_away || g_ring_count == 0 || !g_clock_known) return;
   // The moment to show, on the sender's clock.
@@ -478,6 +628,11 @@ void SampleRemote(std::uint32_t now_ms, RemoteView* out) {
 bool OpenToOthers() {
   std::lock_guard<std::mutex> lock(g_mutex);
   return g_open;
+}
+
+bool Hosting() {
+  std::lock_guard<std::mutex> lock(g_mutex);
+  return g_hosting;
 }
 
 }  // namespace mt::net

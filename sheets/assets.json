@@ -24,6 +24,14 @@
    "purpose": "The actor the local player's hero is created from; poses are only read from a hero made from it, so the 241-joint rig is certain.",
    "evidence": "Live: the local hero object's asset pointer equalled this asset's lookup result.",
    "runtime_verified": true
+  },
+  {
+   "id": "system_menu_config",
+   "path": "configs/uiconfig/uisystemmenu.config",
+   "asset_id": "0xaef8cf28b8872304",
+   "purpose": "The pause list's config (its MainMenu holds the list's items).",
+   "evidence": "Extracted from the archive (UISystemMenuConfig, MainMenu with 12 items); loaded in free roam.",
+   "runtime_verified": true
   }
  ],
  "references": []

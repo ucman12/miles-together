@@ -9,7 +9,7 @@
  "rows": [
   {
    "id": "protocol_version",
-   "value": 1,
+   "value": 3,
    "unit": "version",
    "purpose": "Bumped whenever a message layout changes."
   },
@@ -90,6 +90,102 @@
    "value": 300000,
    "unit": "ms",
    "purpose": "How often the mod writes its per-frame cost to its log."
+  },
+  {
+   "id": "partner_map_type",
+   "value": 7,
+   "unit": "map element type",
+   "purpose": "Map element type given to the other player's double: the game's person marker (pink square with a silhouette)."
+  },
+  {
+   "id": "lighting_mode_count",
+   "value": 7,
+   "unit": "modes",
+   "purpose": "Number of lighting modes; an index outside 0 to this minus 1 is ignored."
+  },
+  {
+   "id": "world_retry_period",
+   "value": 10000,
+   "unit": "ms",
+   "purpose": "Least time between two requests to match the host's lighting mode, so a game that keeps changing it back is not flooded."
+  },
+  {
+   "id": "max_enemies",
+   "value": 12,
+   "unit": "enemies",
+   "purpose": "Most enemies the host shares at once; the nearest are kept."
+  },
+  {
+   "id": "enemy_range",
+   "value": 120,
+   "unit": "m",
+   "purpose": "The host shares an enemy within this distance of either player."
+  },
+  {
+   "id": "enemy_scan_period",
+   "value": 1000,
+   "unit": "ms",
+   "purpose": "How often the host walks the object table for enemies."
+  },
+  {
+   "id": "enemy_send_rate",
+   "value": 10,
+   "unit": "per second",
+   "purpose": "Pose updates per second for each shared enemy."
+  },
+  {
+   "id": "enemy_timeout",
+   "value": 3000,
+   "unit": "ms",
+   "purpose": "A puppet whose enemy has not been heard from for this long is removed."
+  },
+  {
+   "id": "enemy_interpolation_delay",
+   "value": 160,
+   "unit": "ms",
+   "purpose": "How far behind the newest enemy pose a puppet is shown; longer than the player's because enemies are sent less often."
+  },
+  {
+   "id": "anim_rig_slot_count",
+   "value": 10,
+   "unit": "slots",
+   "purpose": "Rig slots read on an animation controller; the largest joint count among them is the rig's."
+  },
+  {
+   "id": "asset_settle_time",
+   "value": 2000,
+   "unit": "ms",
+   "purpose": "After asking the game to load an enemy's actor, wait this long before spawning puppets of it, so they are not built from a half-loaded actor."
+  },
+  {
+   "id": "menu_base_items",
+   "value": 12,
+   "unit": "items",
+   "purpose": "Items in the game's own pause list; the mod adds its items only when it finds exactly this many."
+  },
+  {
+   "id": "menu_go_to_friend_id",
+   "value": 512,
+   "unit": "menu id",
+   "purpose": "Id of the added Go to your friend item (above the game's own ids, so the game ignores it)."
+  },
+  {
+   "id": "menu_start_crime_id",
+   "value": 513,
+   "unit": "menu id",
+   "purpose": "Id of the added Start a crime (test) item."
+  },
+  {
+   "id": "friend_warp_offset",
+   "value": 3,
+   "unit": "m",
+   "purpose": "How far to the side of the other player Go to your friend puts you."
+  },
+  {
+   "id": "warp_retry_distance",
+   "value": 10,
+   "unit": "m",
+   "purpose": "If you are this far from the warp target a second later (a perch pulled you back), warp again, once."
   }
  ],
  "references": []

@@ -175,6 +175,153 @@
    "purpose": "Look: number of body-group entries.",
    "evidence": "norfmare's documented layout; live read gave 4.",
    "runtime_verified": true
+  },
+  {
+   "id": "map_element_type",
+   "value": 76,
+   "purpose": "MapElement component: map element type, copied from the actor's MapElement data when the component is created. The minimap picks its icon by this type. Type 1 (hero) is drawn only for the local player.",
+   "evidence": "Ghidra: MapElement init (0x7F2FC0) writes it from the component data; minimap draw (0x8E1C10) returns early for type 1 unless the element's object is the local hero. Live: the double's element read 1; writing other types changed its minimap icon.",
+   "runtime_verified": true
+  },
+  {
+   "id": "map_element_always_show",
+   "value": 108,
+   "purpose": "MapElement component: byte flag. When set, activation adds the element to the always-drawn set and the minimap shows it whatever its distance, pinned to the edge when outside the view.",
+   "evidence": "Ghidra: MapElement activate (0x7F32F0) adds the element to the set at exe+0x670C8B8 when this flag is set; the minimap update (0x8E3890) draws every element in that set. Live: with the flag set the double's marker showed at 8 m and at 85 m.",
+   "runtime_verified": true
+  },
+  {
+   "id": "lighting_mode_index",
+   "value": 925760,
+   "purpose": "Lighting system: current lighting mode index (int32, 0-6).",
+   "evidence": "GetLightingModeAction's execute (0xDC3950) reads it to pick the mode's hash. Live: read 2, then 4 a second after requesting 4.",
+   "runtime_verified": true
+  },
+  {
+   "id": "lighting_request",
+   "value": 921808,
+   "purpose": "Lighting system: the object set_lighting_mode is called on.",
+   "evidence": "SetLightingModeAction's execute passes lighting system + 0xE10D0. Live call worked.",
+   "runtime_verified": true
+  },
+  {
+   "id": "object_slot_size",
+   "value": 192,
+   "purpose": "Size of one object slot in object_table.",
+   "evidence": "resolve_handle multiplies the index by 0xC0.",
+   "runtime_verified": true
+  },
+  {
+   "id": "asset_id",
+   "value": 8,
+   "purpose": "Actor asset: its 64-bit asset id.",
+   "evidence": "Live: actor_asset_lookup of the u64 at asset+8 returned the same asset for the firefighter and melee thug actors.",
+   "runtime_verified": true
+  },
+  {
+   "id": "anim_rig_slots",
+   "value": 304,
+   "purpose": "AnimControllerComponent: first of its rig slots, each a pointer to a rig description.",
+   "evidence": "Live: hero slots 0-7 point at rigs reading 241; firefighters 135; civilians 124-159; matches the joint matrices actually animated. A freshly spawned (inert) bot has none.",
+   "runtime_verified": true
+  },
+  {
+   "id": "anim_rig_slot_stride",
+   "value": 48,
+   "purpose": "AnimControllerComponent: bytes between rig slots.",
+   "evidence": "Live: hero slots at +0x130, +0x160, +0x190 and on.",
+   "runtime_verified": true
+  },
+  {
+   "id": "rig_joint_count",
+   "value": 4,
+   "purpose": "Rig description: number of joints (u16).",
+   "evidence": "Live: 241 for the hero's rig, 135 for the firefighter's.",
+   "runtime_verified": true
+  },
+  {
+   "id": "asset_entry_object",
+   "value": 48,
+   "purpose": "Config asset entry: pointer to the loaded config object.",
+   "evidence": "Live: the system menu entry's +0x30 had RTTI UISystemMenuConfig.",
+   "runtime_verified": true
+  },
+  {
+   "id": "menu_main_items",
+   "value": 360,
+   "purpose": "UISystemMenuConfig: MainMenu (the pause list) item array pointer.",
+   "evidence": "Live: first item's label PAUSE_OPTION_RESUME; MainMenu label Main Menu at +0x140.",
+   "runtime_verified": true
+  },
+  {
+   "id": "menu_main_count",
+   "value": 368,
+   "purpose": "UISystemMenuConfig: number of pause list items (u32).",
+   "evidence": "Live: 12; raising it showed added items in the pause list.",
+   "runtime_verified": true
+  },
+  {
+   "id": "menu_main_capacity",
+   "value": 372,
+   "purpose": "UISystemMenuConfig: room in the pause list item array (u32).",
+   "evidence": "Live: 16.",
+   "runtime_verified": true
+  },
+  {
+   "id": "menu_item_size",
+   "value": 168,
+   "purpose": "Size of one pause list item.",
+   "evidence": "Live: labels 0xA8 apart.",
+   "runtime_verified": true
+  },
+  {
+   "id": "menu_item_id",
+   "value": 8,
+   "purpose": "Menu item: id (u32) as menu_select receives it.",
+   "evidence": "Live: 0, 1, 0x3C, 8, 2, 0x60, 0x1F, 3, 4, 5, 7, 6 for the twelve items in config order.",
+   "runtime_verified": true
+  },
+  {
+   "id": "menu_item_label",
+   "value": 16,
+   "purpose": "Menu item: label tag (char*).",
+   "evidence": "Live.",
+   "runtime_verified": true
+  },
+  {
+   "id": "menu_item_label_length",
+   "value": 24,
+   "purpose": "Menu item: label tag length (u32).",
+   "evidence": "Live: 0x13 for PAUSE_OPTION_RESUME.",
+   "runtime_verified": true
+  },
+  {
+   "id": "menu_item_label_hash",
+   "value": 28,
+   "purpose": "Menu item: string_hash of the label tag (u32), which the text lookup uses.",
+   "evidence": "Live: 0x72BB280D for PAUSE_OPTION_RESUME.",
+   "runtime_verified": true
+  },
+  {
+   "id": "crime_cooldown",
+   "value": 472,
+   "purpose": "random_crime_system: seconds until it next picks a crime (float, counts down).",
+   "evidence": "Live: 58.3 then 56.3 two seconds later; set to 0.5, it picked a crime (a crime marker appeared) and reset to 75.",
+   "runtime_verified": true
+  },
+  {
+   "id": "warp_action_owner",
+   "value": 8,
+   "purpose": "Warp action given to warp_object: pointer to an object (whose handle it sends).",
+   "evidence": "Decompiled 0x1B81410: reads *(action+8) as an object.",
+   "runtime_verified": true
+  },
+  {
+   "id": "warp_action_release",
+   "value": 100,
+   "purpose": "Warp action given to warp_object: byte flag; set, the hero leaves a perch or ledge and stays at the warp target.",
+   "evidence": "Live: from a lamp-post perch, a warp with this byte set left the hero at the target (he dropped to the street); with it clear he slid back to the perch. +0x60 = 1 and +0x65 = 1 did not do this.",
+   "runtime_verified": true
   }
  ],
  "references": []

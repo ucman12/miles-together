@@ -111,6 +111,23 @@ int main() {
     Check(worst < 0.0008f, "a creeping joint never drifts more than the slack");
   }
 
+  // An enemy rig with fewer joints: only those travel, and a stream of one rig refuses more.
+  {
+    constexpr std::uint32_t kEnemyJoints = 135;
+    codec::DeltaState enemy_encode, enemy_decode;
+    const std::size_t size = codec::EncodePose(*sent, &enemy_encode, packed.get(), kEnemyJoints);
+    Check(size < full, "a smaller rig packs smaller");
+    auto enemy = std::make_unique<Pose>();
+    Check(codec::DecodePose(packed.get(), size, &enemy_decode, enemy.get(), kEnemyJoints), "a smaller rig decodes");
+    float back[16];
+    for (std::uint32_t j = 0; j < kEnemyJoints; ++j) {
+      codec::JointToMatrix(enemy->joints[j], back);
+      Check(MaxDifference(back, &matrices[j * 16], 12, 15) < 0.004f, "smaller rig joint translation within tolerance");
+    }
+    codec::DeltaState enemy_decode_small;
+    Check(!codec::DecodePose(packed.get(), size, &enemy_decode_small, enemy.get(), kEnemyJoints - 1), "a rig smaller than sent is refused");
+  }
+
   // Halfway between a pose and itself moved one metre is half a metre.
   auto moved = std::make_unique<Pose>(*sent);
   auto between = std::make_unique<Pose>();

@@ -13,9 +13,12 @@ Published on Melty: <https://melty.gg/m/miles-together>
   mashup's page; Melty hands the joiner the host's address.
 - The other player's Miles is the game's own Miles model, moved by the poses their game
   sends 20 times a second and smoothed in between.
+- Your friend shows on your minimap as a person marker, even when far away. The full
+  map in the pause menu does not show them yet.
+- Time of day and weather are shared: the host's lighting is the one both players see,
+  and the joiner's game follows when the host changes it.
 - Suits follow: change your suit and your friend sees it, mask and hood included, even
   when it is a suit their game had not loaded.
-- Your friend shows on your map as a second hero marker.
 - Nothing is written to save files. On a game version the mod was not built for it
   switches itself off and the game runs unchanged.
 

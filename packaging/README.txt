@@ -1,4 +1,4 @@
-Miles Together 0.1.0
+Miles Together 0.3.0
 ====================
 
 Swing through New York with a friend. Two players, each in their own copy of
@@ -10,11 +10,14 @@ How to play
 Install and start it from Melty (https://melty.gg/m/miles-together). One of you
 presses Play, the other joins from the mashup's page. Each of you loads a save
 as usual; once both are in the city you can see each other. Your friend also
-shows on your map as a second hero marker.
+shows on your minimap as a person marker, even when far away. The full map
+in the pause menu does not show them yet.
 
 What this version does and does not do
 --------------------------------------
 - You each keep your own game and your own save. Nothing is written to saves.
+- You share the time of day and the weather: the host's is the one you both
+  see, and it follows when the host changes it in the menu.
 - You see your friend's Miles. You do not share enemies, crimes or missions yet,
   so each of you fights in your own city.
 - Web lines and effects of the other player are not shown yet.

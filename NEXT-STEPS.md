@@ -1,11 +1,11 @@
 # Next steps
 
-Miles Together 0.1.0 is a private draft on Melty. It is built, uploaded and passed Melty's
-own test. It is not published: that waits for a test with two PCs.
+Miles Together 0.1.0 was published on Melty on 2026-10-13, after a two-PC test on one home
+network that played well. The steps that test used are kept below for the next one.
 
 Studio: <https://melty.gg/studio/d2500e08-1d7d-4e9c-ab0e-cc0dff30f215>
 
-## 1. Two-PC test
+## 1. Two-PC test (done 2026-10-13, same network)
 
 Both PCs on the same network. The second PC signed in to the other Steam account, with the
 game on version 4.630.0.0.

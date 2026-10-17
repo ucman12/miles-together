@@ -151,6 +151,94 @@
    "purpose": "Show a look's body groups on an actor.",
    "evidence": "Live: the double had no head in the Homemade Suit until this call showed its mask.",
    "runtime_verified": true
+  },
+  {
+   "id": "set_lighting_mode",
+   "rva": "0x248DE60",
+   "signature": "40534883ec208bdae8333df8ff488bc88bd34883c4205be9",
+   "kind": "call",
+   "returns": "void",
+   "arguments": [
+    "void*",
+    "std::int32_t"
+   ],
+   "purpose": "Request a lighting mode (time of day and weather) by index 0-6; the game blends to it in place.",
+   "evidence": "Called by SetLightingModeAction's execute (0xDC3770) with the lighting system + 0xE10D0 and the index of the mode's hash in its table. Live: index 2 to 4 changed the city's lighting within a second, no loading screen, game kept running.",
+   "runtime_verified": true
+  },
+  {
+   "id": "request_actor_asset",
+   "rva": "0x1AA7B60",
+   "signature": "4883ec58486381300100004533db48896c2470498be94889",
+   "kind": "call",
+   "returns": "void*",
+   "arguments": [
+    "void*",
+    "std::uint64_t",
+    "const char*",
+    "void*",
+    "void*"
+   ],
+   "purpose": "Ask the actor asset manager for an actor asset by id, starting a background load when it is not in memory; actor_asset_lookup finds it once loaded.",
+   "evidence": "Decompiled: hashes nothing itself, maps aliases, then calls the base asset manager's request (0x1B30DD0), which creates an entry and starts the load when the archive holds the asset. Live: the pistol thug actor (8b8478c2dfa1b694), not loaded on this PC, was loadable 199 ms after the request and spawned and rendered with its pistol.",
+   "runtime_verified": true
+  },
+  {
+   "id": "menu_select",
+   "rva": "0x94EF80",
+   "signature": "83fa600f87f003000048895c24085556574881ec90000000",
+   "kind": "hook",
+   "returns": "void",
+   "arguments": [
+    "void*",
+    "std::uint32_t"
+   ],
+   "purpose": "The pause list (PopupSystemMenuUI) acting on a chosen item; the second argument is the item's id as stored in the menu config (0 Resume, 1 Restart Last Checkpoint, 3 Exit Danger Room, 4 Photo Mode, 5 Settings, 6 Quit). Ids above 0x60 fall through and do nothing.",
+   "evidence": "Decompiled switch matches the menu config's ids; live: choosing added items with ids 0x44 and 0x200 reached it with those values and the menu kept working.",
+   "runtime_verified": true
+  },
+  {
+   "id": "text_lookup",
+   "rva": "0x1C55D40",
+   "signature": "48895c24084889742410574883ec20488bf28bf98bd1488b",
+   "kind": "hook",
+   "returns": "const char*",
+   "arguments": [
+    "std::uint32_t",
+    "const char*"
+   ],
+   "purpose": "Localised text for a text tag's hash; returns the fallback, or INVALID, when the tag is unknown.",
+   "evidence": "Decompiled; the pause map and the menu call it with label hashes. Live: menu items with new tags showed INVALID, and returning our own text from a hook showed it.",
+   "runtime_verified": true
+  },
+  {
+   "id": "string_hash",
+   "rva": "0x20C51C0",
+   "signature": "4885c9743d440fb6014584c074344c8d49014c8d15175b6c",
+   "kind": "call",
+   "returns": "std::uint32_t",
+   "arguments": [
+    "const char*",
+    "std::uint32_t"
+   ],
+   "purpose": "The engine's string hash (second argument 0xEDB88320), used for text tags.",
+   "evidence": "Live: hashing PAUSE_OPTION_RESUME gave 0x72BB280D, the hash stored with that menu label.",
+   "runtime_verified": true
+  },
+  {
+   "id": "warp_object",
+   "rva": "0x1AAFA60",
+   "signature": "488bc4488958184889702055574156488da8b8fdffff4881",
+   "kind": "call",
+   "returns": "void",
+   "arguments": [
+    "void*",
+    "void*",
+    "const float*"
+   ],
+   "purpose": "ActorWarpAction's warp: sends a warp event to an object (the hero handles it) for a transform, falling back to setting the transform. First argument is the action: +8 must point at an object (used for its handle); +0x60 to +0x65 are settings, zero is fine.",
+   "evidence": "Decompiled. Live: warping the standing hero 57 m with a zeroed action whose +8 is the hero put him there and he stayed; a perched hero drifts back towards his perch.",
+   "runtime_verified": true
   }
  ],
  "references": []

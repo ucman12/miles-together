@@ -21,14 +21,15 @@ struct DeltaState {
   void Reset() { primed = false; }
 };
 
-// Packs `pose`; returns the byte count written to `out` (at most kMaxPoseBytes).
-std::size_t EncodePose(const Pose& pose, DeltaState* state, std::uint8_t* out);
+// Packs the first `count` joints of `pose` (a hero has kJointCount; an enemy rig may have
+// fewer); returns the byte count written to `out` (at most kMaxPoseBytes).
+std::size_t EncodePose(const Pose& pose, DeltaState* state, std::uint8_t* out, std::uint32_t count = kJointCount);
 
 // Unpacks into `pose`, which must hold the previously decoded pose of this stream.
 // Returns false when the bytes are not a valid pose.
-bool DecodePose(const std::uint8_t* data, std::size_t size, DeltaState* state, Pose* pose);
+bool DecodePose(const std::uint8_t* data, std::size_t size, DeltaState* state, Pose* pose, std::uint32_t count = kJointCount);
 
 // Blend between two poses, t in [0, 1].
-void Interpolate(const Pose& a, const Pose& b, float t, Pose* out);
+void Interpolate(const Pose& a, const Pose& b, float t, Pose* out, std::uint32_t count = kJointCount);
 
 }  // namespace mt::codec

@@ -32,6 +32,46 @@
    "purpose": "Handle of the local player's hero object.",
    "evidence": "Read by the engine's loadout cloner; live resolve matched the camera target's owner.",
    "runtime_verified": true
+  },
+  {
+   "id": "lighting_system",
+   "rva": "0x85EE100",
+   "type": "void*",
+   "purpose": "Pointer to the game system that holds the current lighting mode.",
+   "evidence": "Returned by 0x247EC30, which both SetLightingModeAction and GetLightingModeAction call. Live: non-null in the city.",
+   "runtime_verified": true
+  },
+  {
+   "id": "object_table",
+   "rva": "0x83FA000",
+   "type": "uint8_t*",
+   "purpose": "Pointer to the array of game object slots (0xC0 bytes each).",
+   "evidence": "resolve_handle (0x1AA8E20) computes slot = index * 0xC0 + this pointer. Live walk found 83701 used slots.",
+   "runtime_verified": true
+  },
+  {
+   "id": "object_table_count",
+   "rva": "0x83FA01C",
+   "type": "uint32_t",
+   "purpose": "Number of object slots in object_table.",
+   "evidence": "resolve_handle rejects indices at or above it. Live walk used it.",
+   "runtime_verified": true
+  },
+  {
+   "id": "config_asset_manager",
+   "rva": "0x6A58180",
+   "type": "void*",
+   "purpose": "Config asset table, used with actor_asset_lookup to find a loaded config.",
+   "evidence": "Live: RTTI ConfigAssetManager; looking up the system menu config's id returned its entry.",
+   "runtime_verified": true
+  },
+  {
+   "id": "random_crime_system",
+   "rva": "0x7A41F20",
+   "type": "RandomCrimeSystem2",
+   "purpose": "The open-world random crime system (a static object).",
+   "evidence": "Its constructor 0xE18AD0 is called on this address by 0x13C7A0; live vtable 0x3E52CA0.",
+   "runtime_verified": true
   }
  ],
  "references": []

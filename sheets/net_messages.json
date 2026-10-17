@@ -60,6 +60,36 @@
    ],
    "sent_when": "Once per second.",
    "purpose": "Keep the link alive and detect a lost peer."
+  },
+  {
+   "id": "world",
+   "code": 6,
+   "fields": [
+    "lighting_mode:u8"
+   ],
+   "sent_when": "After hello and whenever the sender's lighting mode changes.",
+   "purpose": "Share the sender's time of day and weather; the joiner matches the host's."
+  },
+  {
+   "id": "enemy",
+   "code": 7,
+   "fields": [
+    "id:u32",
+    "asset:u64",
+    "joint_count:u8",
+    "pose: as message pose, joint_count joints"
+   ],
+   "sent_when": "By the host, at the enemy send rate, for each enemy it shares.",
+   "purpose": "Show the host's enemy on the joiner as a posed puppet."
+  },
+  {
+   "id": "enemy_gone",
+   "code": 8,
+   "fields": [
+    "id:u32"
+   ],
+   "sent_when": "By the host when a shared enemy stops existing or leaves range.",
+   "purpose": "Remove that puppet on the joiner."
   }
  ],
  "references": []

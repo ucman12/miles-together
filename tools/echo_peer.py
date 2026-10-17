@@ -5,6 +5,10 @@ later and a little to the side, through the real network code. It is a test aid 
 PC; it is not a player and it is not part of the release.
 
     python tools/echo_peer.py 127.0.0.1:47584 --delay 0.4 --offset 2 0 0
+
+With --listen it plays the host instead: the game joins it (set join=127.0.0.1:<port> in
+melty.properties before starting the game). --lighting sends that lighting mode (0-6) as the
+peer's world state, so a joining game can be seen matching the host's time of day and weather.
 """
 from __future__ import annotations
 
@@ -37,18 +41,28 @@ def frame(kind: str, body: bytes = b"") -> bytes:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("address", help="host:port from the host's melty.log")
+    parser.add_argument("address", help="host:port from the host's melty.log, or with --listen the port to host on")
+    parser.add_argument("--listen", action="store_true", help="host: wait for the game to join on this port")
+    parser.add_argument("--lighting", type=int, help="lighting mode (0-6) to announce as this peer's world state")
     parser.add_argument("--delay", type=float, default=0.3, help="seconds between a pose arriving and going back")
     parser.add_argument("--offset", type=float, nargs=3, default=[2.0, 0.0, 0.0], metavar=("X", "Y", "Z"), help="metres added to the position")
     parser.add_argument("--suit", nargs="*", help="skin config ids (hex) to wear in place of the host's suit")
     parser.add_argument("--seconds", type=float, default=0, help="stop after this long; 0 runs until the host closes")
     args = parser.parse_args()
 
-    host, _, port = args.address.rpartition(":")
-    connection = socket.create_connection((host, int(port)), timeout=5)
+    if args.listen:
+        listener = socket.create_server(("127.0.0.1", int(args.address.rpartition(":")[2])))
+        print("waiting for the game to join on", listener.getsockname())
+        connection, _ = listener.accept()
+        listener.close()
+    else:
+        host, _, port = args.address.rpartition(":")
+        connection = socket.create_connection((host, int(port)), timeout=5)
     connection.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
     connection.settimeout(0.01)
     connection.sendall(frame("hello", struct.pack("<IHI", MAGIC, PROTOCOL, BUILD)))
+    if args.lighting is not None:
+        connection.sendall(frame("world", struct.pack("<B", args.lighting)))
 
     pending: collections.deque[tuple[float, bytes]] = collections.deque()
     counts: collections.Counter[str] = collections.Counter()
@@ -87,6 +101,8 @@ def main() -> int:
                 pending.append((now + args.delay, frame("suit", body)))
             elif kind == "away":
                 pending.append((now + args.delay, frame("away", body)))
+            elif kind == "world":
+                print("game's lighting mode:", body[0])
             elif kind == "ping":
                 connection.sendall(frame("ping", body))
         while pending and pending[0][0] <= now:

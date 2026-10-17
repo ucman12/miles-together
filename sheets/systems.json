@@ -195,6 +195,103 @@
    "source": "src/proxy.cpp",
    "verification": "passed",
    "evidence": "Live: the game loads the file as winmm.dll at start and plays normally; all 181 winmm exports are forwarded with Windows' own ordinals."
+  },
+  {
+   "id": "partner_map_marker",
+   "behavior": "Show the other player on the minimap: before the double is activated, give its MapElement the person-marker type and the always-show flag.",
+   "uses": [
+    "layout:map_element_type",
+    "layout:map_element_always_show",
+    "settings:partner_map_type",
+    "native_functions:activate_objects"
+   ],
+   "source": "src/game.cpp",
+   "verification": "passed",
+   "evidence": "Two PCs on one home network, 2026-10-13, build 0.2.0: the creator reported it works; both mod logs show no marker failure; the creator's 74-second Steam clip (media/miles-together-map-marker-2026-10-13.mp4) shows the person marker on the minimap following the other player while swinging. Earlier on one PC with tools/echo_peer.py: shown at 8, 36 and 85 m, removed on disconnect, back on reconnect. The pause map does not show it."
+  },
+  {
+   "id": "world_sync",
+   "behavior": "Shared world state, part 1: both players send their lighting mode (time of day and weather); the joiner switches to the host's when it differs. The world message itself is sent and read in src/net.cpp.",
+   "uses": [
+    "native_functions:set_lighting_mode",
+    "native_data:lighting_system",
+    "layout:lighting_mode_index",
+    "layout:lighting_request",
+    "settings:lighting_mode_count",
+    "settings:world_retry_period",
+    "net_messages:world"
+   ],
+   "source": "src/game.cpp",
+   "verification": "passed",
+   "evidence": "Two PCs on one home network, 2026-10-14, build 0.3.0: the creator reported it works. Joiner log: 'matching the host's time of day and weather (lighting mode 1; this game had 2)' and later '(lighting mode 2; this game had 1)', each at the moment the host came back from its pause menu after changing the time of day; both games exited with code 0. Earlier on one PC against tools/echo_peer.py --listen: matched modes 0 and 4. Not seen in the logs: the joiner changing its own time of day and being switched back."
+  },
+  {
+   "id": "enemy_sync",
+   "behavior": "Shared enemies, part 1 (visual): the host finds enemies (objects with a BotHealth component) near either player and sends each one's actor asset, transform and joints; the joiner spawns an inert puppet of the same actor for each and poses it every frame, and removes it when the host says it is gone or goes quiet. Messages are sent and read in src/net.cpp.",
+   "uses": [
+    "native_data:object_table",
+    "native_data:object_table_count",
+    "layout:object_slot_size",
+    "layout:object_generation",
+    "layout:object_asset",
+    "layout:asset_id",
+    "layout:actor_joints",
+    "native_functions:spawn_actor",
+    "native_functions:activate_objects",
+    "native_functions:destroy_by_handle",
+    "native_functions:set_actor_transform",
+    "settings:max_enemies",
+    "settings:enemy_range",
+    "settings:enemy_scan_period",
+    "settings:enemy_send_rate",
+    "settings:enemy_timeout",
+    "net_messages:enemy",
+    "net_messages:enemy_gone",
+    "settings:enemy_interpolation_delay",
+    "layout:anim_rig_slots",
+    "layout:anim_rig_slot_stride",
+    "layout:rig_joint_count",
+    "settings:anim_rig_slot_count",
+    "native_functions:request_actor_asset",
+    "settings:asset_settle_time"
+   ],
+   "source": "src/game.cpp",
+   "verification": "pending",
+   "evidence": "Probe on one PC: an inert firefighter puppet posed every frame from a live firefighter's 135 joints moved naturally. Not yet built. First two-PC test (2026-10-14): the joiner crashed three times while activating rifle-thug puppets (write to an unallocated per-type component list at 0x1E2609F). Joint counts found by scanning for w = 1 were wrong (223, 239, 241 for one actor), so puppets were written past their joint arrays. Fixed: the count now comes from the live enemy's animation controller, and at most one puppet is spawned per frame. Second two-PC test: no crash, but nothing shown: the host's thug actors (melee thug, baton thugs, pistol thug) were not loaded on the joiner. Fixed: the joiner requests an enemy's actor asset when it is missing and spawns the puppet once it has loaded. Third two-PC test: the joiner showed all 11 shared enemies, but the creator saw only some. actor_asset_lookup found a requested actor 1 ms after the request, so the first 9 puppets were spawned from actors still loading; the later ones, spawned a second on, were fine. Fixed: wait asset_settle_time after a request before spawning that actor."
+  },
+  {
+   "id": "pause_menu_options",
+   "behavior": "Adds Go to your friend (only while connected) and Start a crime (test) to the game's pause list. Choosing the first warps you next to the other player; the second makes the random crime system pick a crime now.",
+   "uses": [
+    "native_functions:menu_select",
+    "native_functions:text_lookup",
+    "native_functions:string_hash",
+    "native_functions:warp_object",
+    "native_functions:actor_asset_lookup",
+    "native_data:config_asset_manager",
+    "native_data:random_crime_system",
+    "assets:system_menu_config",
+    "layout:asset_entry_object",
+    "layout:menu_main_items",
+    "layout:menu_main_count",
+    "layout:menu_main_capacity",
+    "layout:menu_item_size",
+    "layout:menu_item_id",
+    "layout:menu_item_label",
+    "layout:menu_item_label_length",
+    "layout:menu_item_label_hash",
+    "layout:crime_cooldown",
+    "layout:warp_action_owner",
+    "settings:menu_base_items",
+    "settings:menu_go_to_friend_id",
+    "settings:menu_start_crime_id",
+    "settings:friend_warp_offset",
+    "settings:warp_retry_distance",
+    "layout:warp_action_release"
+   ],
+   "source": "src/game.cpp",
+   "verification": "pending",
+   "evidence": "Probes on one PC: added items showed with our labels and their selection reached menu_select; warp_object moved a standing hero 57 m; forcing the crime cooldown picked a crime. Not yet built. Built and tested on one PC with tools/echo_peer.py: Start a crime (test) showed and picked a crime; Go to your friend showed only while connected and moved a perched hero 61 m to the friend (139.5, 7.4, -1986.1 to 181.5, 1, -1941.1) and he stayed, with the warp_action_release byte set. Not yet tested on two PCs."
   }
  ],
  "references": [
